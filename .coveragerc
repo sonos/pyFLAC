@@ -1,0 +1,23 @@
+[run]
+omit =
+    # omit anything in a test directory
+    */tests/*
+    .tox/*
+    setup.py
+    # omit anything in the examples directory
+    */examples/*
+    # omit anything in the libraries, builder directory
+    */libraries/*
+    */builder/*
+
+[report]
+omit =
+    # omit anything in a test directory
+    */tests/*
+    .tox/*
+    setup.py
+    # omit anything in the examples directory
+    */examples/*
+    # omit anything in the libraries, builder directory
+    */libraries/*
+    */builder/*
