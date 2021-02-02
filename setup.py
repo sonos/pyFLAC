@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+
+# ------------------------------------------------------------------------------
+#
+#  pyFLAC
+#
+#  Copyright (c) 2011-2021, Sonos, Inc.
+#  All rights reserved.
+#
+# ------------------------------------------------------------------------------
+
 from setuptools import setup
 
 setup(
@@ -14,7 +25,11 @@ setup(
         'pyflac/builder/encoder.py:ffibuilder',
         'pyflac/builder/decoder.py:ffibuilder'
     ],
-    install_requires=['cffi>=1.4.0'],
+    install_requires=[
+        'cffi>=1.4.0',
+        'numpy',
+        'SoundFile',
+    ],
     python_requires='>=3.6',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -27,6 +42,5 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Topic :: Multimedia :: Sound/Audio',
-        'Topic :: System :: Archiving :: Compression',
     ],
 )

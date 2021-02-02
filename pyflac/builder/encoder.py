@@ -4,7 +4,7 @@
 #
 #  pyFLAC encoder builder
 #
-#  Copyright (c) 2011-2020, Sonos, Inc.
+#  Copyright (c) 2011-2021, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -67,6 +67,8 @@ typedef enum {
 	FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_METADATA,
 	FLAC__STREAM_ENCODER_INIT_STATUS_ALREADY_INITIALIZED
 } FLAC__StreamEncoderInitStatus;
+
+extern const char * const FLAC__StreamEncoderInitStatusString[];
 
 typedef enum {
 	FLAC__STREAM_ENCODER_READ_STATUS_CONTINUE,

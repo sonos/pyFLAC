@@ -4,7 +4,7 @@
 #
 #  pyFLAC decoder builder
 #
-#  Copyright (c) 2011-2020, Sonos, Inc.
+#  Copyright (c) 2011-2021, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
