@@ -1,0 +1,14 @@
+name: lint
+
+on: pull_request
+
+jobs:
+
+  flake8:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Lint the Python code
+      uses: TrueBrain/actions-flake8@master
+      with:
+        path: pyflac

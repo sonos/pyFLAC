@@ -60,7 +60,7 @@ class Encoder:
         if self.bits_per_sample != samples.dtype.itemsize * 8:
             raise ValueError('The number of bits per sample does not match the configured value')
 
-        samples = np.ascontiguousarray(samples)
+        samples = np.ascontiguousarray(samples).astype(np.int32)
         samples_ptr = _ffi.from_buffer('int32_t[]', samples)
 
         if not _lib.FLAC__stream_encoder_process_interleaved(self._encoder, samples_ptr, len(samples)):
@@ -169,10 +169,10 @@ class Encoder:
     @compression_level.setter
     def compression_level(self, value: int):
         if not isinstance(value, int):
-            raise ValueError('The block size must be an integer')
+            raise ValueError('The compression level must be an integer')
 
         if not _lib.FLAC__stream_encoder_set_compression_level(self._encoder, value):
-            raise ValueError(f'Failed to set block size to {value}')
+            raise ValueError(f'Failed to set compression level to {value}')
 
 
 class StreamEncoder(Encoder):
@@ -224,6 +224,7 @@ class FileEncoder(Encoder):
         self.bits_per_sample = bits_per_sample
         self.blocksize = blocksize
         self.verify = verify
+        self.compression_level = 1
 
         c_filename = _ffi.new('char[]', filename.encode('utf-8'))
         rc = _lib.FLAC__stream_encoder_init_file(
