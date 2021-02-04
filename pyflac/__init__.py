@@ -10,4 +10,4 @@
 # ------------------------------------------------------------------------------
 
 # flake8: noqa: F401
-from .encoder import StreamEncoder, FileEncoder
+from .encoder import StreamEncoder, FileEncoder, EncoderInitException

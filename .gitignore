@@ -138,3 +138,6 @@ dmypy.json
 # CFFI
 *.o
 *.c
+
+# Audio
+*.flac

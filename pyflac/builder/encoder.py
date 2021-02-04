@@ -274,12 +274,10 @@ FLAC__bool FLAC__stream_encoder_set_max_residual_partition_order(FLAC__StreamEnc
 FLAC__bool FLAC__stream_encoder_set_rice_parameter_search_dist(FLAC__StreamEncoder *encoder, uint32_t value);
 FLAC__bool FLAC__stream_encoder_set_total_samples_estimate(FLAC__StreamEncoder *encoder, FLAC__uint64 value);
 
-// STATE
+// GETTERS
 FLAC__StreamEncoderState FLAC__stream_encoder_get_state(const FLAC__StreamEncoder *encoder);
 const char *FLAC__stream_encoder_get_resolved_state_string(const FLAC__StreamEncoder *encoder);
 void FLAC__stream_encoder_get_verify_decoder_error_stats(const FLAC__StreamEncoder *encoder, FLAC__uint64 *absolute_sample, uint32_t *frame_number, uint32_t *channel, uint32_t *sample, FLAC__int32 *expected, FLAC__int32 *got);
-
-// GETTERS
 FLAC__bool FLAC__stream_encoder_get_verify(const FLAC__StreamEncoder *encoder);
 FLAC__bool FLAC__stream_encoder_get_streamable_subset(const FLAC__StreamEncoder *encoder);
 uint32_t FLAC__stream_encoder_get_channels(const FLAC__StreamEncoder *encoder);

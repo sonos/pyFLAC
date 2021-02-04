@@ -10,25 +10,39 @@
 # ------------------------------------------------------------------------------
 
 import logging
+from typing import Callable
+
 import numpy as np
 
 from pyflac._encoder import ffi as _ffi
 from pyflac._encoder import lib as _lib
 
-from .exceptions import EncoderInitException
+
+class EncoderInitException(Exception):
+    """
+    An exception raised if initialisation fails for a
+    `StreamEncoder` or a `FileEncoder`.
+    """
+    def __init__(self, code):
+        message = _ffi.string(_lib.FLAC__StreamEncoderInitStatusString[code])
+        super().__init__(message.decode())
 
 
-class Encoder:
+class _Encoder:
     """
     A pyFLAC Encoder.
 
     """
     def __init__(self):
+        self._initialised = False
         self._encoder = _lib.FLAC__stream_encoder_new()
         self._encoder_handle = _ffi.new_handle(self)
 
     def __del__(self):
         self.close()
+
+    def _init(self):
+        raise NotImplementedError
 
     def close(self):
         """
@@ -50,15 +64,24 @@ class Encoder:
 
         This method ensures the samples are contiguous in memory and then
         passes a pointer to the numpy array to the FLAC encoder to process.
+
+        On processing the first buffer of samples, the encoder is set up
+        for the given amount of channels and data type. This is automatically
+        determined from the numpy array.
         """
         if not isinstance(samples, np.ndarray):
             raise ValueError('Processing only supports numpy arrays')
 
-        if self.channels != samples.shape[1]:
-            raise ValueError('Number of channels does not match the configured value')
+        if self._initialised:
+            if self.channels != samples.shape[1]:
+                raise ValueError('Number of channels has changed')
 
-        if self.bits_per_sample != samples.dtype.itemsize * 8:
-            raise ValueError('The number of bits per sample does not match the configured value')
+            if self.bits_per_sample != samples.dtype.itemsize * 8:
+                raise ValueError('The number of bits per sample has changed')
+        else:
+            self.channels = samples.shape[1]
+            self.bits_per_sample = samples.dtype.itemsize * 8
+            self._init()
 
         samples = np.ascontiguousarray(samples).astype(np.int32)
         samples_ptr = _ffi.from_buffer('int32_t[]', samples)
@@ -72,7 +95,9 @@ class Encoder:
         releases resources, resets the encoder settings to their defaults,
         and returns the encoder state to `FLAC__STREAM_ENCODER_UNINITIALIZED`.
         """
-        return _lib.FLAC__stream_encoder_finish(self._encoder)
+        if self._encoder:
+            return _lib.FLAC__stream_encoder_finish(self._encoder)
+        return False
 
     # -- State
 
@@ -175,25 +200,25 @@ class Encoder:
             raise ValueError(f'Failed to set compression level to {value}')
 
 
-class StreamEncoder(Encoder):
+class StreamEncoder(_Encoder):
     """
     A pyFLAC Stream Encoder.
     """
     def __init__(self,
-                 callback,
-                 channels: int,
                  sample_rate: int,
-                 bits_per_sample: int,
+                 write_callback: Callable[[bytes, int, int, int], None],
+                 compression_level: int = 5,
                  blocksize: int = 0,
                  verify: bool = False):
         super().__init__()
 
-        self.channels = channels
+        self.write_callback = write_callback
         self.sample_rate = sample_rate
-        self.bits_per_sample = bits_per_sample
         self.blocksize = blocksize
+        self.compression_level = compression_level
         self.verify = verify
 
+    def _init(self):
         rc = _lib.FLAC__stream_encoder_init_stream(
             self._encoder,
             _lib._write_callback,
@@ -205,28 +230,45 @@ class StreamEncoder(Encoder):
         if rc != _lib.FLAC__STREAM_ENCODER_INIT_STATUS_OK:
             raise EncoderInitException(rc)
 
+        self._initialised = True
 
-class FileEncoder(Encoder):
+    def __del__(self):
+        self.close()
+
+    def close(self):
+        """
+        It is good practice to match every init with a finish.
+        """
+        self.finish()
+        super().close()
+
+
+class FileEncoder(_Encoder):
     """
     A pyFLAC File Encoder.
     """
     def __init__(self,
                  filename: str,
-                 channels: int,
                  sample_rate: int,
-                 bits_per_sample: int,
                  blocksize: int = 0,
+                 compression_level: int = 5,
                  verify: bool = False):
         super().__init__()
+        self.__filename = filename
 
-        self.channels = channels
         self.sample_rate = sample_rate
-        self.bits_per_sample = bits_per_sample
         self.blocksize = blocksize
+        self.compression_level = compression_level
         self.verify = verify
-        self.compression_level = 1
 
-        c_filename = _ffi.new('char[]', filename.encode('utf-8'))
+    def __del__(self):
+        self.close()
+
+    def _init(self):
+        """
+        Initialise the encoder to write to a file
+        """
+        c_filename = _ffi.new('char[]', self.__filename.encode('utf-8'))
         rc = _lib.FLAC__stream_encoder_init_file(
             self._encoder,
             c_filename,
@@ -236,27 +278,35 @@ class FileEncoder(Encoder):
         if rc != _lib.FLAC__STREAM_ENCODER_INIT_STATUS_OK:
             raise EncoderInitException(rc)
 
+        self._initialised = True
 
-@_ffi.def_extern()
-def _read_callback(encoder,
-                   byte_buffer,
-                   bytes,
-                   client_data):
-    """
-    Called internally when the encoder needs to read back encoded data.
-    """
-    encoder = _ffi.from_handle(client_data)
-    return _lib.FLAC__STREAM_ENCODER_READ_STATUS_CONTINUE
+    def close(self):
+        """
+        It is good practice to match every init with a finish.
+        """
+        self.finish()
+        super().close()
 
 
 @_ffi.def_extern()
 def _write_callback(encoder,
                     byte_buffer,
-                    bytes,
-                    samples,
+                    num_bytes,
+                    num_samples,
                     current_frame,
                     client_data):
+    """
+    Called internally when the encoder has compressed
+    data ready to write.
+    """
     encoder = _ffi.from_handle(client_data)
+    buffer = bytes(_ffi.buffer(byte_buffer, num_bytes))
+    encoder.write_callback(
+        buffer,
+        num_bytes,
+        num_samples,
+        current_frame
+    )
     return _lib.FLAC__STREAM_ENCODER_WRITE_STATUS_OK
 
 
@@ -280,6 +330,13 @@ def _tell_callback(encoder,
 def _metadata_callback(encoder,
                        metadata,
                        client_data):
+    """
+    Called once at the end of encoding with the populated
+    STREAMINFO structure. This is so the client can seek back
+    to the beginning of the file and write the STREAMINFO block
+    with the correct statistics after encoding (like minimum/maximum
+    frame size and total samples).
+    """
     encoder = _ffi.from_handle(client_data)
 
 

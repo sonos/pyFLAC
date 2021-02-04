@@ -4,7 +4,7 @@
 #
 #  pyFLAC encoder test suite
 #
-#  Copyright (c) 2011-2020, Sonos, Inc.
+#  Copyright (c) 2011-2021, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -15,15 +15,15 @@ import unittest
 
 import numpy as np
 import soundfile as sf
-from pyflac.encoder import Encoder, StreamEncoder, FileEncoder
+from pyflac.encoder import _Encoder, StreamEncoder, FileEncoder
 
 
-class TestEncoderStream(unittest.TestCase):
+class TestEncoder(unittest.TestCase):
     """
     Test Suite for the generic encoder class
     """
     def setUp(self):
-        self.encoder = Encoder()
+        self.encoder = _Encoder()
 
     def tearDown(self):
         self.encoder.close()

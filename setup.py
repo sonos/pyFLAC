@@ -11,9 +11,11 @@
 
 from setuptools import setup
 
+__version__ = '0.1.0'
+
 setup(
     name='pyFLAC',
-    version='0.1.0',
+    version=__version__,
     description='A Python wrapper for libFLAC',
     long_description=open('README.rst').read(),
     author='Sonos, Inc',
@@ -30,6 +32,7 @@ setup(
         'numpy',
         'SoundFile',
     ],
+    test_suite='tests',
     python_requires='>=3.6',
     classifiers=[
         'Development Status :: 3 - Alpha',
