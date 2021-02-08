@@ -1,4 +1,5 @@
 [run]
+relative_files = True
 omit =
     # omit anything in a test directory
     */tests/*

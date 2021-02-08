@@ -98,6 +98,8 @@ typedef enum {
 	FLAC__STREAM_DECODER_ERROR_STATUS_UNPARSEABLE_STREAM
 } FLAC__StreamDecoderErrorStatus;
 
+extern const char * const FLAC__StreamDecoderErrorStatusString[];
+
 typedef enum {
 	FLAC__FRAME_NUMBER_TYPE_FRAME_NUMBER, /**< number contains the frame number */
 	FLAC__FRAME_NUMBER_TYPE_SAMPLE_NUMBER /**< number contains the sample number of first sample in frame */
@@ -355,9 +357,9 @@ typedef void (*FLAC__StreamDecoderErrorCallback)(const FLAC__StreamDecoder *deco
 extern "Python" FLAC__StreamDecoderReadStatus _read_callback(const FLAC__StreamDecoder *, FLAC__byte *, size_t *, void *);
 extern "Python" FLAC__StreamDecoderSeekStatus _seek_callback(const FLAC__StreamDecoder *, FLAC__uint64, void *);
 extern "Python" FLAC__StreamDecoderTellStatus _tell_callback(const FLAC__StreamDecoder *, FLAC__uint64 *, void *);
-extern "Python" FLAC__StreamDecoderTellStatus _length_callback(const FLAC__StreamDecoder *, FLAC__uint64 *, void *);
+extern "Python" FLAC__StreamDecoderLengthStatus _length_callback(const FLAC__StreamDecoder *, FLAC__uint64 *, void *);
 extern "Python" FLAC__bool _eof_callback(const FLAC__StreamDecoder *, void *);
-extern "Python" FLAC__StreamDecoderWriteStatus _write_callback(const FLAC__StreamDecoder *, const FLAC__Frame *, const FLAC__byte const **, void *);
+extern "Python" FLAC__StreamDecoderWriteStatus _write_callback(const FLAC__StreamDecoder *, const FLAC__Frame *, const FLAC__int32 const **, void *);
 extern "Python" void _metadata_callback(const FLAC__StreamDecoder *, const FLAC__StreamMetadata *, void *);
 extern "Python" void _error_callback(const FLAC__StreamDecoder *, FLAC__StreamDecoderErrorStatus, void *);
 

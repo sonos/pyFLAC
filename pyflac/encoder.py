@@ -28,6 +28,14 @@ class EncoderInitException(Exception):
         super().__init__(message.decode())
 
 
+class EncoderProcessException(Exception):
+    """
+    An exception raised if an error occurs during the
+    processing of audio data.
+    """
+    pass
+
+
 class _Encoder:
     """
     A pyFLAC Encoder.
@@ -87,7 +95,7 @@ class _Encoder:
         samples_ptr = _ffi.from_buffer('int32_t[]', samples)
 
         if not _lib.FLAC__stream_encoder_process_interleaved(self._encoder, samples_ptr, len(samples)):
-            raise RuntimeError(self.state)
+            raise EncoderProcessException(self.state)
 
     def finish(self) -> bool:
         """
@@ -213,6 +221,7 @@ class StreamEncoder(_Encoder):
         super().__init__()
 
         self.write_callback = write_callback
+
         self.sample_rate = sample_rate
         self.blocksize = blocksize
         self.compression_level = compression_level
@@ -222,9 +231,9 @@ class StreamEncoder(_Encoder):
         rc = _lib.FLAC__stream_encoder_init_stream(
             self._encoder,
             _lib._write_callback,
-            _lib._seek_callback,
-            _lib._tell_callback,
-            _lib._metadata_callback,
+            _ffi.NULL,
+            _ffi.NULL,
+            _ffi.NULL,
             self._encoder_handle
         )
         if rc != _lib.FLAC__STREAM_ENCODER_INIT_STATUS_OK:
@@ -314,16 +323,14 @@ def _write_callback(encoder,
 def _seek_callback(encoder,
                    absolute_byte_offset,
                    client_data):
-    encoder = _ffi.from_handle(client_data)
-    return _lib.FLAC__STREAM_ENCODER_SEEK_STATUS_OK
+    raise NotImplementedError
 
 
 @_ffi.def_extern()
 def _tell_callback(encoder,
                    absolute_byte_offset,
                    client_data):
-    encoder = _ffi.from_handle(client_data)
-    return _lib.FLAC__STREAM_ENCODER_TELL_STATUS_OK
+    raise NotImplementedError
 
 
 @_ffi.def_extern()
@@ -337,8 +344,7 @@ def _metadata_callback(encoder,
     with the correct statistics after encoding (like minimum/maximum
     frame size and total samples).
     """
-    encoder = _ffi.from_handle(client_data)
-
+    raise NotImplementedError
 
 @_ffi.def_extern()
 def _progress_callback(encoder,
