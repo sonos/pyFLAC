@@ -165,12 +165,13 @@ def _read_callback(decoder,
     data = bytearray(int(num_bytes[0]))
     actual_bytes = decoder.read_callback(data)
 
-    num_bytes[0] = actual_bytes
-    _ffi.memmove(byte_buffer, data, actual_bytes)
-
     if actual_bytes == 0:
         return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
+    elif actual_bytes == -1:
+        return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
     else:
+        num_bytes[0] = actual_bytes
+        _ffi.memmove(byte_buffer, data, actual_bytes)
         return _lib.FLAC__STREAM_DECODER_READ_STATUS_CONTINUE
 
 
@@ -217,16 +218,20 @@ def _write_callback(decoder,
     if frame.header.bits_per_sample != 16:
         raise ValueError
 
+    metadata = {
+        'block_size': int(frame.header.blocksize),
+        'channels': int(frame.header.channels),
+        'sample_rate': int(frame.header.sample_rate),
+        'bits_per_sample': int(frame.header.bits_per_sample)
+    }
+
     for ch in range(0, frame.header.channels):
         channels.append(
             np.frombuffer(_ffi.buffer(buffer[ch], bytes_per_frame), dtype='int32').astype(np.int16)
         )
     output = np.column_stack(channels)
+    decoder.write_callback(output, metadata)
 
-    decoder.write_callback(
-        output,
-        frame,
-    )
     return _lib.FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE
 
 
@@ -245,6 +250,8 @@ def _error_callback(decoder,
 
     """
     logger = logging.getLogger(__name__)
-    logger.error(f'decoder error: {status}')
+    message = _ffi.string(
+        _lib.FLAC__StreamDecoderErrorStatusString[status]).decode()
+    logger.error(f'decoder error: {message}')
 
-    raise DecoderErrorException(status)
+    raise DecoderErrorException(message)
