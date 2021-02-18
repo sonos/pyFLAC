@@ -1,10 +1,13 @@
 pyFLAC
 ======
 
-[![lint](https://github.com/Sonos-Inc/pyFLAC/workflows/lint/badge.svg)](https://github.com/Sonos-Inc/pyFLAC/actions?query=workflow%3Alint)
-[![tests](https://github.com/Sonos-Inc/pyFLAC/workflows/tests/badge.svg)](https://github.com/Sonos-Inc/pyFLAC/actions?query=workflow%3Atests)
+.. image:: https://github.com/Sonos-Inc/pyFLAC/workflows/lint/badge.svg
+    :target: https://github.com/Sonos-Inc/pyFLAC/actions?query=workflow%2Flint.yml
+.. image:: https://github.com/Sonos-Inc/pyFLAC/workflows/tests/badge.svg
+    :target: https://github.com/Sonos-Inc/pyFLAC/actions?query=workflow%2Ftests.yml
 
-A Python wrapper around libFLAC
+
+A simple Pythonic interface for `libFLAC <https://xiph.org/flac>`_.
 
 
 Compiling FLAC
@@ -12,8 +15,8 @@ Compiling FLAC
 
 Download a release from https://xiph.org/flac/download.html
 
-```
-CC=clang ./configure --with-ogg=no
-make
-make install
-```
+.. code-block:: bash
+
+    CC=clang ./configure --with-ogg=no
+    make
+    make install

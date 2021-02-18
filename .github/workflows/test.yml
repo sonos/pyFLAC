@@ -20,11 +20,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
         sudo apt-get update -y
         sudo apt-get install libsndfile1
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
