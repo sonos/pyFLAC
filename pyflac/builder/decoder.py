@@ -10,6 +10,7 @@
 # ------------------------------------------------------------------------------
 
 import cffi
+import os
 import site
 import platform
 
@@ -18,6 +19,8 @@ system = platform.system().lower()
 if system not in ['darwin', 'linux']:
     raise RuntimeError('%s platform is not supported' % platform.system())
 
+if system == 'linux' and os.uname()[4][:3] == 'arm':
+    system = 'raspbian'
 
 build_kwargs = {
     'libraries': ['FLAC'],
