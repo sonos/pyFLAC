@@ -166,6 +166,7 @@ def _read_callback(decoder,
     actual_bytes = decoder.read_callback(data)
 
     if actual_bytes == 0:
+        num_bytes[0] = 0
         return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
     elif actual_bytes == -1:
         return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
@@ -226,8 +227,9 @@ def _write_callback(decoder,
     }
 
     for ch in range(0, frame.header.channels):
+        cbuffer = _ffi.buffer(buffer[ch], bytes_per_frame)
         channels.append(
-            np.frombuffer(_ffi.buffer(buffer[ch], bytes_per_frame), dtype='int32').astype(np.int16)
+            np.copy(np.frombuffer(cbuffer, dtype='int32')).astype(np.int16)
         )
     output = np.column_stack(channels)
     decoder.write_callback(output, metadata)
