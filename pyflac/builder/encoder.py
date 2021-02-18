@@ -10,6 +10,24 @@
 # ------------------------------------------------------------------------------
 
 import cffi
+import site
+import platform
+
+
+system = platform.system().lower()
+if system not in ['darwin', 'linux']:
+    raise RuntimeError('%s platform is not supported' % platform.system())
+
+
+build_kwargs = {
+    'libraries': ['FLAC'],
+    'include_dirs': ['./pyflac/include'],
+    'library_dirs': [f'./pyflac/libraries/{system}'],
+    'extra_link_args': [
+        f'-Wl,-rpath,./pyflac/libraries/{system}',
+        f'-Wl,-rpath,{site.getsitepackages()[0]}/pyflac/libraries/{system}'
+    ]
+}
 
 
 ffibuilder = cffi.FFI()
@@ -20,8 +38,10 @@ ffibuilder.set_source(
     #include <FLAC/format.h>
     #include <FLAC/stream_encoder.h>
     """,
-    libraries=['flac']
+    **build_kwargs
 )
+
+# flake8: noqa: E501
 ffibuilder.cdef("""
 
 // TYPES
@@ -40,200 +60,200 @@ typedef FLAC__uint8 FLAC__byte;
 
 // ENUMS
 typedef enum {
-	FLAC__STREAM_ENCODER_OK = 0,
-	FLAC__STREAM_ENCODER_UNINITIALIZED,
-	FLAC__STREAM_ENCODER_OGG_ERROR,
-	FLAC__STREAM_ENCODER_VERIFY_DECODER_ERROR,
-	FLAC__STREAM_ENCODER_VERIFY_MISMATCH_IN_AUDIO_DATA,
-	FLAC__STREAM_ENCODER_CLIENT_ERROR,
-	FLAC__STREAM_ENCODER_IO_ERROR,
-	FLAC__STREAM_ENCODER_FRAMING_ERROR,
-	FLAC__STREAM_ENCODER_MEMORY_ALLOCATION_ERROR
+    FLAC__STREAM_ENCODER_OK = 0,
+    FLAC__STREAM_ENCODER_UNINITIALIZED,
+    FLAC__STREAM_ENCODER_OGG_ERROR,
+    FLAC__STREAM_ENCODER_VERIFY_DECODER_ERROR,
+    FLAC__STREAM_ENCODER_VERIFY_MISMATCH_IN_AUDIO_DATA,
+    FLAC__STREAM_ENCODER_CLIENT_ERROR,
+    FLAC__STREAM_ENCODER_IO_ERROR,
+    FLAC__STREAM_ENCODER_FRAMING_ERROR,
+    FLAC__STREAM_ENCODER_MEMORY_ALLOCATION_ERROR
 } FLAC__StreamEncoderState;
 
 typedef enum {
-	FLAC__STREAM_ENCODER_INIT_STATUS_OK = 0,
-	FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR,
-	FLAC__STREAM_ENCODER_INIT_STATUS_UNSUPPORTED_CONTAINER,
-	FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_CALLBACKS,
-	FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_NUMBER_OF_CHANNELS,
-	FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BITS_PER_SAMPLE,
-	FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE,
-	FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE,
-	FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_MAX_LPC_ORDER,
-	FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_QLP_COEFF_PRECISION,
-	FLAC__STREAM_ENCODER_INIT_STATUS_BLOCK_SIZE_TOO_SMALL_FOR_LPC_ORDER,
-	FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE,
-	FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_METADATA,
-	FLAC__STREAM_ENCODER_INIT_STATUS_ALREADY_INITIALIZED
+    FLAC__STREAM_ENCODER_INIT_STATUS_OK = 0,
+    FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR,
+    FLAC__STREAM_ENCODER_INIT_STATUS_UNSUPPORTED_CONTAINER,
+    FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_CALLBACKS,
+    FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_NUMBER_OF_CHANNELS,
+    FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BITS_PER_SAMPLE,
+    FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE,
+    FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE,
+    FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_MAX_LPC_ORDER,
+    FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_QLP_COEFF_PRECISION,
+    FLAC__STREAM_ENCODER_INIT_STATUS_BLOCK_SIZE_TOO_SMALL_FOR_LPC_ORDER,
+    FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE,
+    FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_METADATA,
+    FLAC__STREAM_ENCODER_INIT_STATUS_ALREADY_INITIALIZED
 } FLAC__StreamEncoderInitStatus;
 
 extern const char * const FLAC__StreamEncoderInitStatusString[];
 
 typedef enum {
-	FLAC__STREAM_ENCODER_READ_STATUS_CONTINUE,
-	FLAC__STREAM_ENCODER_READ_STATUS_END_OF_STREAM,
-	FLAC__STREAM_ENCODER_READ_STATUS_ABORT,
-	FLAC__STREAM_ENCODER_READ_STATUS_UNSUPPORTED
+    FLAC__STREAM_ENCODER_READ_STATUS_CONTINUE,
+    FLAC__STREAM_ENCODER_READ_STATUS_END_OF_STREAM,
+    FLAC__STREAM_ENCODER_READ_STATUS_ABORT,
+    FLAC__STREAM_ENCODER_READ_STATUS_UNSUPPORTED
 } FLAC__StreamEncoderReadStatus;
 
 typedef enum {
-	FLAC__STREAM_ENCODER_SEEK_STATUS_OK,
-	FLAC__STREAM_ENCODER_SEEK_STATUS_ERROR,
-	FLAC__STREAM_ENCODER_SEEK_STATUS_UNSUPPORTED
+    FLAC__STREAM_ENCODER_SEEK_STATUS_OK,
+    FLAC__STREAM_ENCODER_SEEK_STATUS_ERROR,
+    FLAC__STREAM_ENCODER_SEEK_STATUS_UNSUPPORTED
 } FLAC__StreamEncoderSeekStatus;
 
 typedef enum {
-	FLAC__STREAM_ENCODER_TELL_STATUS_OK,
-	FLAC__STREAM_ENCODER_TELL_STATUS_ERROR,
-	FLAC__STREAM_ENCODER_TELL_STATUS_UNSUPPORTED
+    FLAC__STREAM_ENCODER_TELL_STATUS_OK,
+    FLAC__STREAM_ENCODER_TELL_STATUS_ERROR,
+    FLAC__STREAM_ENCODER_TELL_STATUS_UNSUPPORTED
 } FLAC__StreamEncoderTellStatus;
 
 typedef enum {
-	FLAC__STREAM_ENCODER_WRITE_STATUS_OK = 0,
-	FLAC__STREAM_ENCODER_WRITE_STATUS_FATAL_ERROR
+    FLAC__STREAM_ENCODER_WRITE_STATUS_OK = 0,
+    FLAC__STREAM_ENCODER_WRITE_STATUS_FATAL_ERROR
 } FLAC__StreamEncoderWriteStatus;
 
 // STRUCTURES
 struct FLAC__StreamEncoderProtected;
 struct FLAC__StreamEncoderPrivate;
 typedef struct {
-	struct FLAC__StreamEncoderProtected *protected_;
-	struct FLAC__StreamEncoderPrivate *private_;
+    struct FLAC__StreamEncoderProtected *protected_;
+    struct FLAC__StreamEncoderPrivate *private_;
 } FLAC__StreamEncoder;
 
 // METADATA
 typedef enum {
-	FLAC__METADATA_TYPE_STREAMINFO = 0,
-	FLAC__METADATA_TYPE_PADDING = 1,
-	FLAC__METADATA_TYPE_APPLICATION = 2,
-	FLAC__METADATA_TYPE_SEEKTABLE = 3,
-	FLAC__METADATA_TYPE_VORBIS_COMMENT = 4,
-	FLAC__METADATA_TYPE_CUESHEET = 5,
-	FLAC__METADATA_TYPE_PICTURE = 6,
-	FLAC__METADATA_TYPE_UNDEFINED = 7,
-	FLAC__MAX_METADATA_TYPE = 126,
+    FLAC__METADATA_TYPE_STREAMINFO = 0,
+    FLAC__METADATA_TYPE_PADDING = 1,
+    FLAC__METADATA_TYPE_APPLICATION = 2,
+    FLAC__METADATA_TYPE_SEEKTABLE = 3,
+    FLAC__METADATA_TYPE_VORBIS_COMMENT = 4,
+    FLAC__METADATA_TYPE_CUESHEET = 5,
+    FLAC__METADATA_TYPE_PICTURE = 6,
+    FLAC__METADATA_TYPE_UNDEFINED = 7,
+    FLAC__MAX_METADATA_TYPE = 126,
 } FLAC__MetadataType;
 
 typedef struct {
-	uint32_t min_blocksize, max_blocksize;
-	uint32_t min_framesize, max_framesize;
-	uint32_t sample_rate;
-	uint32_t channels;
-	uint32_t bits_per_sample;
-	FLAC__uint64 total_samples;
-	FLAC__byte md5sum[16];
+    uint32_t min_blocksize, max_blocksize;
+    uint32_t min_framesize, max_framesize;
+    uint32_t sample_rate;
+    uint32_t channels;
+    uint32_t bits_per_sample;
+    FLAC__uint64 total_samples;
+    FLAC__byte md5sum[16];
 } FLAC__StreamMetadata_StreamInfo;
 
 typedef struct {
-	int dummy;
+    int dummy;
 } FLAC__StreamMetadata_Padding;
 
 typedef struct {
-	FLAC__byte id[4];
-	FLAC__byte *data;
+    FLAC__byte id[4];
+    FLAC__byte *data;
 } FLAC__StreamMetadata_Application;
 
 typedef struct {
-	FLAC__uint64 sample_number;
-	FLAC__uint64 stream_offset;
-	uint32_t frame_samples;
+    FLAC__uint64 sample_number;
+    FLAC__uint64 stream_offset;
+    uint32_t frame_samples;
 } FLAC__StreamMetadata_SeekPoint;
 
 typedef struct {
-	uint32_t num_points;
-	FLAC__StreamMetadata_SeekPoint *points;
+    uint32_t num_points;
+    FLAC__StreamMetadata_SeekPoint *points;
 } FLAC__StreamMetadata_SeekTable;
 
 typedef struct {
-	FLAC__uint32 length;
-	FLAC__byte *entry;
+    FLAC__uint32 length;
+    FLAC__byte *entry;
 } FLAC__StreamMetadata_VorbisComment_Entry;
 
 typedef struct {
-	FLAC__StreamMetadata_VorbisComment_Entry vendor_string;
-	FLAC__uint32 num_comments;
-	FLAC__StreamMetadata_VorbisComment_Entry *comments;
+    FLAC__StreamMetadata_VorbisComment_Entry vendor_string;
+    FLAC__uint32 num_comments;
+    FLAC__StreamMetadata_VorbisComment_Entry *comments;
 } FLAC__StreamMetadata_VorbisComment;
 
 typedef struct {
-	FLAC__uint64 offset;
-	FLAC__byte number;
+    FLAC__uint64 offset;
+    FLAC__byte number;
 } FLAC__StreamMetadata_CueSheet_Index;
 
 typedef struct {
-	FLAC__uint64 offset;
-	FLAC__byte number;
-	char isrc[13];
-	uint32_t type:1;
-	uint32_t pre_emphasis:1;
-	FLAC__byte num_indices;
-	FLAC__StreamMetadata_CueSheet_Index *indices;
+    FLAC__uint64 offset;
+    FLAC__byte number;
+    char isrc[13];
+    uint32_t type:1;
+    uint32_t pre_emphasis:1;
+    FLAC__byte num_indices;
+    FLAC__StreamMetadata_CueSheet_Index *indices;
 } FLAC__StreamMetadata_CueSheet_Track;
 
 typedef struct {
-	char media_catalog_number[129];
-	FLAC__uint64 lead_in;
-	FLAC__bool is_cd;
-	uint32_t num_tracks;
-	FLAC__StreamMetadata_CueSheet_Track *tracks;
+    char media_catalog_number[129];
+    FLAC__uint64 lead_in;
+    FLAC__bool is_cd;
+    uint32_t num_tracks;
+    FLAC__StreamMetadata_CueSheet_Track *tracks;
 } FLAC__StreamMetadata_CueSheet;
 
 typedef enum {
-	FLAC__STREAM_METADATA_PICTURE_TYPE_OTHER = 0, /**< Other */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_FILE_ICON_STANDARD = 1, /**< 32x32 pixels 'file icon' (PNG only) */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_FILE_ICON = 2, /**< Other file icon */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_FRONT_COVER = 3, /**< Cover (front) */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_BACK_COVER = 4, /**< Cover (back) */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_LEAFLET_PAGE = 5, /**< Leaflet page */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_MEDIA = 6, /**< Media (e.g. label side of CD) */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_LEAD_ARTIST = 7, /**< Lead artist/lead performer/soloist */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_ARTIST = 8, /**< Artist/performer */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_CONDUCTOR = 9, /**< Conductor */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_BAND = 10, /**< Band/Orchestra */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_COMPOSER = 11, /**< Composer */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_LYRICIST = 12, /**< Lyricist/text writer */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_RECORDING_LOCATION = 13, /**< Recording Location */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_DURING_RECORDING = 14, /**< During recording */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_DURING_PERFORMANCE = 15, /**< During performance */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_VIDEO_SCREEN_CAPTURE = 16, /**< Movie/video screen capture */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_FISH = 17, /**< A bright coloured fish */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_ILLUSTRATION = 18, /**< Illustration */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_BAND_LOGOTYPE = 19, /**< Band/artist logotype */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_PUBLISHER_LOGOTYPE = 20, /**< Publisher/Studio logotype */
-	FLAC__STREAM_METADATA_PICTURE_TYPE_UNDEFINED
+    FLAC__STREAM_METADATA_PICTURE_TYPE_OTHER = 0, /**< Other */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_FILE_ICON_STANDARD = 1, /**< 32x32 pixels 'file icon' (PNG only) */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_FILE_ICON = 2, /**< Other file icon */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_FRONT_COVER = 3, /**< Cover (front) */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_BACK_COVER = 4, /**< Cover (back) */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_LEAFLET_PAGE = 5, /**< Leaflet page */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_MEDIA = 6, /**< Media (e.g. label side of CD) */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_LEAD_ARTIST = 7, /**< Lead artist/lead performer/soloist */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_ARTIST = 8, /**< Artist/performer */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_CONDUCTOR = 9, /**< Conductor */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_BAND = 10, /**< Band/Orchestra */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_COMPOSER = 11, /**< Composer */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_LYRICIST = 12, /**< Lyricist/text writer */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_RECORDING_LOCATION = 13, /**< Recording Location */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_DURING_RECORDING = 14, /**< During recording */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_DURING_PERFORMANCE = 15, /**< During performance */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_VIDEO_SCREEN_CAPTURE = 16, /**< Movie/video screen capture */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_FISH = 17, /**< A bright coloured fish */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_ILLUSTRATION = 18, /**< Illustration */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_BAND_LOGOTYPE = 19, /**< Band/artist logotype */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_PUBLISHER_LOGOTYPE = 20, /**< Publisher/Studio logotype */
+    FLAC__STREAM_METADATA_PICTURE_TYPE_UNDEFINED
 } FLAC__StreamMetadata_Picture_Type;
 
 typedef struct {
-	FLAC__StreamMetadata_Picture_Type type;
-	char *mime_type;
-	FLAC__byte *description;
-	FLAC__uint32 width;
-	FLAC__uint32 height;
-	FLAC__uint32 depth;
-	FLAC__uint32 colors;
-	FLAC__uint32 data_length;
-	FLAC__byte *data;
+    FLAC__StreamMetadata_Picture_Type type;
+    char *mime_type;
+    FLAC__byte *description;
+    FLAC__uint32 width;
+    FLAC__uint32 height;
+    FLAC__uint32 depth;
+    FLAC__uint32 colors;
+    FLAC__uint32 data_length;
+    FLAC__byte *data;
 } FLAC__StreamMetadata_Picture;
 
 typedef struct {
-	FLAC__byte *data;
+    FLAC__byte *data;
 } FLAC__StreamMetadata_Unknown;
 
 typedef struct {
-	FLAC__MetadataType type;
-	FLAC__bool is_last;
-	uint32_t length;
-	union {
-		FLAC__StreamMetadata_StreamInfo stream_info;
-		FLAC__StreamMetadata_Padding padding;
-		FLAC__StreamMetadata_Application application;
-		FLAC__StreamMetadata_SeekTable seek_table;
-		FLAC__StreamMetadata_VorbisComment vorbis_comment;
-		FLAC__StreamMetadata_CueSheet cue_sheet;
-		FLAC__StreamMetadata_Picture picture;
-		FLAC__StreamMetadata_Unknown unknown;
-	} data;
+    FLAC__MetadataType type;
+    FLAC__bool is_last;
+    uint32_t length;
+    union {
+        FLAC__StreamMetadata_StreamInfo stream_info;
+        FLAC__StreamMetadata_Padding padding;
+        FLAC__StreamMetadata_Application application;
+        FLAC__StreamMetadata_SeekTable seek_table;
+        FLAC__StreamMetadata_VorbisComment vorbis_comment;
+        FLAC__StreamMetadata_CueSheet cue_sheet;
+        FLAC__StreamMetadata_Picture picture;
+        FLAC__StreamMetadata_Unknown unknown;
+    } data;
 } FLAC__StreamMetadata;
 
 // CALLBACKS

@@ -6,3 +6,6 @@ include tests/test_encoder.py
 include tests/test_decoder.py
 include pyflac/builder/encoder.py
 include pyflac/builder/decoder.py
+include pyflac/include/FLAC/*.h
+include pyflac/libraries/darwin/*.dylib
+include pyflac/libraries/linux/*.so

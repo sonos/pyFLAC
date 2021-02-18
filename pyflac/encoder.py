@@ -346,6 +346,7 @@ def _metadata_callback(encoder,
     """
     raise NotImplementedError
 
+
 @_ffi.def_extern()
 def _progress_callback(encoder,
                        bytes_written,
