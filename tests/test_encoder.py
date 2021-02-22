@@ -30,9 +30,6 @@ class TestEncoder(unittest.TestCase):
     def setUp(self):
         self.encoder = _Encoder()
 
-    def tearDown(self):
-        self.encoder.close()
-
     def test_channels(self):
         """ Test that the channels setter returns the same value from libFLAC """
         test_channels = 2
@@ -79,8 +76,7 @@ class TestStreamEncoder(unittest.TestCase):
         )
 
     def tearDown(self):
-        if self.encoder:
-            self.encoder.close()
+        self.encoder.finish()
 
     def _write_callback(self,
                         buffer: bytes,
@@ -113,7 +109,6 @@ class TestStreamEncoder(unittest.TestCase):
 
     def test_process_mono(self):
         """ Test that an array of int16 mono samples can be processed """
-        self.encoder.close()
         self.encoder = StreamEncoder(
             sample_rate=self.SAMPLE_RATE,
             blocksize=self.BLOCKSIZE,
@@ -125,7 +120,6 @@ class TestStreamEncoder(unittest.TestCase):
 
     def test_process_stereo(self):
         """ Test that an array of int16 stereo samples can be processed """
-        self.encoder.close()
         self.encoder = StreamEncoder(
             sample_rate=self.SAMPLE_RATE,
             blocksize=self.BLOCKSIZE,
@@ -148,10 +142,6 @@ class TestFileEncoder(unittest.TestCase):
     def setUp(self):
         self.encoder = None
         self.file = tempfile.NamedTemporaryFile(suffix='.flac')
-
-    def tearDown(self):
-        if self.encoder:
-            self.encoder.close()
 
     def test_state(self):
         """ Test that the initial state is ok """

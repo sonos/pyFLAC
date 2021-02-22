@@ -43,30 +43,15 @@ class _Encoder:
     """
     def __init__(self):
         self._initialised = False
-        self._encoder = _lib.FLAC__stream_encoder_new()
+        self._encoder = _ffi.gc(_lib.FLAC__stream_encoder_new(), _lib.FLAC__stream_encoder_delete)
         self._encoder_handle = _ffi.new_handle(self)
-
-    def __del__(self):
-        self.close()
 
     def _init(self):
         raise NotImplementedError
 
-    def close(self):
-        """
-        Frees memory used by the encoder.
-
-        This should be explictly called at the end of the program to
-        ensure there are no memory leaks.
-        """
-        if self._encoder:
-            _lib.FLAC__stream_encoder_delete(self._encoder)
-            self._encoder = None
-            self._encoder_handle = None
-
     # -- Processing
 
-    def process(self, samples: np.ndarray) -> bool:
+    def process(self, samples: np.ndarray):
         """
         Process some samples.
 
@@ -95,7 +80,10 @@ class _Encoder:
         samples_ptr = _ffi.from_buffer('int32_t[]', samples)
 
         if not _lib.FLAC__stream_encoder_process_interleaved(self._encoder, samples_ptr, len(samples)):
+            _ffi.release(samples_ptr)
             raise EncoderProcessException(self.state)
+        else:
+            _ffi.release(samples_ptr)
 
     def finish(self) -> bool:
         """
@@ -241,16 +229,6 @@ class StreamEncoder(_Encoder):
 
         self._initialised = True
 
-    def __del__(self):
-        self.close()
-
-    def close(self):
-        """
-        It is good practice to match every init with a finish.
-        """
-        self.finish()
-        super().close()
-
 
 class FileEncoder(_Encoder):
     """
@@ -270,9 +248,6 @@ class FileEncoder(_Encoder):
         self.compression_level = compression_level
         self.verify = verify
 
-    def __del__(self):
-        self.close()
-
     def _init(self):
         """
         Initialise the encoder to write to a file
@@ -284,17 +259,11 @@ class FileEncoder(_Encoder):
             _lib._progress_callback,
             self._encoder_handle,
         )
+        _ffi.release(c_filename)
         if rc != _lib.FLAC__STREAM_ENCODER_INIT_STATUS_OK:
             raise EncoderInitException(rc)
 
         self._initialised = True
-
-    def close(self):
-        """
-        It is good practice to match every init with a finish.
-        """
-        self.finish()
-        super().close()
 
 
 @_ffi.def_extern()

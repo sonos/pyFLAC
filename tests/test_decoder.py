@@ -21,9 +21,6 @@ class TestDecoder(unittest.TestCase):
     def setUp(self):
         self.decoder = Decoder()
 
-    def tearDown(self):
-        self.decoder.close()
-
     def test_state(self):
         """ Test that the state returns a valid string """
         self.assertEqual(self.decoder.state, 'FLAC__STREAM_DECODER_UNINITIALIZED')
