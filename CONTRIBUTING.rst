@@ -1,13 +1,23 @@
 Contributing
 ------------
 
-To install the package for development, first build the encoder/decoder libraries using CFFI.
+If you find any bugs or other things that need improvement,
+please create an issue or a pull request at
+https://github.com/sonos/pyFLAC
+Contributions are always welcome!
+
+You should get the latest version from GitHub::
+
+   git clone https://github.com/sonos/pyFLAC.git
+   cd pyflac
+
+To install the package for development, first build the encoder/decoder libraries using CFFI::
 
    python3 pyflac/builder/encoder.py
 
    python3 pyflac/builder/decoder.py
 
-and then install with pip.
+and then install with pip::
 
    pip3 install .
 

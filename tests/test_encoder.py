@@ -86,12 +86,6 @@ class TestStreamEncoder(unittest.TestCase):
                         current_frame: int):
         pass
 
-    def test_process_invalid_float32_samples(self):
-        """ Test than an exception is raised when trying to process float32 samples """
-        test_samples = np.random.rand(self.BLOCKSIZE, self.CHANNELS).astype('float32')
-        with self.assertRaises(EncoderProcessException):
-            self.encoder.process(test_samples)
-
     def test_process_invalid_channels(self):
         """ Test that an exception is raised if the number of channels are changed """
         correct_samples = np.random.rand(self.BLOCKSIZE, self.CHANNELS).astype('int16')

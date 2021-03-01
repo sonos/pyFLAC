@@ -11,25 +11,25 @@
 
 import cffi
 import os
-import site
 import platform
 
 
-system = platform.system().lower()
-if system not in ['darwin', 'linux']:
-    raise RuntimeError('%s platform is not supported' % platform.system())
-
-if system == 'linux' and os.uname()[4][:3] == 'arm':
-    system = 'raspbian'
+system = platform.system()
+if system == 'Darwin':
+    architecture = 'darwin-x86_64'
+elif system == 'Linux':
+    if os.uname()[4][:3] == 'arm':
+        architecture = 'raspbian-armv7a'
+    else:
+        architecture = 'linux-x86_64'
+else:
+    raise RuntimeError('%s platform is not supported' % system)
 
 build_kwargs = {
     'libraries': ['FLAC'],
     'include_dirs': ['./pyflac/include'],
-    'library_dirs': [f'./pyflac/libraries/{system}'],
-    'extra_link_args': [
-        f'-Wl,-rpath,./pyflac/libraries/{system}',
-        f'-Wl,-rpath,{site.getsitepackages()[0]}/pyflac/libraries/{system}'
-    ]
+    'library_dirs': ['./pyflac/libraries/' + architecture],
+    'extra_link_args': ['-Wl,-rpath,./pyflac/libraries/' + architecture]
 }
 
 ffibuilder = cffi.FFI()
