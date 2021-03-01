@@ -16,3 +16,11 @@ A simple Pythonic interface for `libFLAC <https://xiph.org/flac>`_.
 
 pyFLAC allows you to encode and decode raw audio data directly to/from a file, or in real-time
 using callbacks.
+
+Supported platforms
+-------------------
+
+- macOS
+- Linux
+- RPi Zero/2/3/4
+- Windows 7/8/10

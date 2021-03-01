@@ -24,18 +24,16 @@ class EncoderInitException(Exception):
     `StreamEncoder` or a `FileEncoder`.
     """
     def __init__(self, code):
-        message = _ffi.string(_lib.FLAC__StreamEncoderInitStatusString[code])
-        super().__init__(message.decode())
+        self.code = code
+
+    def __str__(self):
+        return _ffi.string(_lib.FLAC__StreamEncoderInitStatusString[self.code]).decode()
 
 
 class EncoderProcessException(Exception):
     """
     An exception raised if an error occurs during the
     processing of audio data.
-
-    TODO:
-        - Document values
-        - How do we do this in Chirp Python?
     """
     pass
 
@@ -47,9 +45,14 @@ class _Encoder:
     This generic class handles interaction with libFLAC.
     """
     def __init__(self):
+        """
+        Create a new libFLAC instance.
+        This instance is automatically released when there are no more references to the encoder.
+        """
         self._initialised = False
         self._encoder = _ffi.gc(_lib.FLAC__stream_encoder_new(), _lib.FLAC__stream_encoder_delete)
         self._encoder_handle = _ffi.new_handle(self)
+        self.logger = logging.getLogger(__name__)
 
     def _init(self):
         raise NotImplementedError
@@ -102,9 +105,7 @@ class _Encoder:
         Returns:
             (bool): `True` if successful, `False` otherwise.
         """
-        if self._encoder:
-            return _lib.FLAC__stream_encoder_finish(self._encoder)
-        return False
+        return _lib.FLAC__stream_encoder_finish(self._encoder)
 
     # -- State
 
@@ -402,5 +403,5 @@ def _progress_callback(encoder,
                        frames_written,
                        total_frames_estimate,
                        client_data):
-    logger = logging.getLogger(__name__)
-    logger.debug(f'{frames_written} frames written')
+    encoder = _ffi.from_handle(client_data)
+    encoder.logger.debug(f'{frames_written} frames written')

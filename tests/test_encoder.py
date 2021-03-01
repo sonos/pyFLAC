@@ -19,8 +19,6 @@ from pyflac.encoder import (
     _Encoder,
     StreamEncoder,
     FileEncoder,
-    EncoderInitException,
-    EncoderProcessException
 )
 
 
@@ -34,26 +32,26 @@ class TestEncoder(unittest.TestCase):
     def test_channels(self):
         """ Test that the channels setter returns the same value from libFLAC """
         test_channels = 2
-        self.encoder.channels = test_channels
-        self.assertEqual(self.encoder.channels, test_channels)
+        self.encoder._channels = test_channels
+        self.assertEqual(self.encoder._channels, test_channels)
 
     def test_bits_per_sample(self):
         """ Test that the bits_per_sample setter returns the same value from libFLAC """
         test_bits_per_sample = 24
-        self.encoder.bits_per_sample = test_bits_per_sample
-        self.assertEqual(self.encoder.bits_per_sample, test_bits_per_sample)
+        self.encoder._bits_per_sample = test_bits_per_sample
+        self.assertEqual(self.encoder._bits_per_sample, test_bits_per_sample)
 
     def test_sample_rate(self):
         """ Test that the sample_rate setter returns the same value from libFLAC """
         test_sample_rate = 48000
-        self.encoder.sample_rate = test_sample_rate
-        self.assertEqual(self.encoder.sample_rate, test_sample_rate)
+        self.encoder._sample_rate = test_sample_rate
+        self.assertEqual(self.encoder._sample_rate, test_sample_rate)
 
     def test_blocksize(self):
         """ Test that the blocksize setter returns the same value from libFLAC """
         test_blocksize = 128
-        self.encoder.blocksize = test_blocksize
-        self.assertEqual(self.encoder.blocksize, test_blocksize)
+        self.encoder._blocksize = test_blocksize
+        self.assertEqual(self.encoder._blocksize, test_blocksize)
 
     def test_state(self):
         """ Test that the state returns a valid string """
@@ -70,6 +68,7 @@ class TestStreamEncoder(unittest.TestCase):
     BLOCKSIZE = 1024
 
     def setUp(self):
+        self.callback_called = False
         self.encoder = StreamEncoder(
             sample_rate=self.SAMPLE_RATE,
             blocksize=self.BLOCKSIZE,
@@ -84,7 +83,7 @@ class TestStreamEncoder(unittest.TestCase):
                         num_bytes: int,
                         num_samples: int,
                         current_frame: int):
-        pass
+        self.callback_called = True
 
     def test_process_invalid_channels(self):
         """ Test that an exception is raised if the number of channels are changed """
@@ -112,6 +111,7 @@ class TestStreamEncoder(unittest.TestCase):
         )
         test_samples = np.random.rand(self.BLOCKSIZE, 1).astype('int16')
         self.encoder.process(test_samples)
+        self.assertTrue(self.callback_called)
 
     def test_process_stereo(self):
         """ Test that an array of int16 stereo samples can be processed """
@@ -123,6 +123,7 @@ class TestStreamEncoder(unittest.TestCase):
         )
         test_samples = np.random.rand(self.BLOCKSIZE, 2).astype('int16')
         self.encoder.process(test_samples)
+        self.assertTrue(self.callback_called)
 
 
 class TestFileEncoder(unittest.TestCase):

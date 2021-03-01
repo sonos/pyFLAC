@@ -24,17 +24,21 @@ class DecoderInitException(Exception):
     `StreamDecoder` or a `FileDecoder`.
     """
     def __init__(self, code):
-        message = _ffi.string(_lib.FLAC__StreamDecoderInitStatusString[code])
-        super().__init__(message.decode())
+        self.code = code
+
+    def __str__(self):
+        return _ffi.string(_lib.FLAC__StreamDecoderInitStatusString[self.code]).decode()
 
 
 class DecoderErrorException(Exception):
     """
-
+    An exception raised if the error callback is called.
     """
     def __init__(self, code):
-        message = _ffi.string(_lib.FLAC__StreamDecoderErrorStatusString[code])
-        super().__init__(message.decode())
+        self.code = code
+
+    def __str__(self):
+        return _ffi.string(_lib.FLAC__StreamDecoderErrorStatusString[self.code]).decode()
 
 
 class DecoderProcessException(Exception):
@@ -45,14 +49,20 @@ class DecoderProcessException(Exception):
     pass
 
 
-class Decoder:
+class _Decoder:
     """
     A pyFLAC decoder.
 
+    This generic class handles interaction with libFLAC.
     """
     def __init__(self):
+        """
+        Create a new libFLAC instance.
+        This instance is automatically released when there are no more references to the decoder.
+        """
         self._decoder = _ffi.gc(_lib.FLAC__stream_decoder_new(), _lib.FLAC__stream_decoder_delete)
         self._decoder_handle = _ffi.new_handle(self)
+        self.logger = logging.getLogger(__name__)
 
     def finish(self) -> bool:
         """
@@ -60,9 +70,7 @@ class Decoder:
         releases resources, resets the decoder settings to their defaults,
         and returns the decoder state to `FLAC__STREAM_DECODER_UNINITIALIZED`.
         """
-        if self._decoder:
-            return _lib.FLAC__stream_decoder_finish(self._decoder)
-        return False
+        return _lib.FLAC__stream_decoder_finish(self._decoder)
 
     # -- State
 
@@ -78,22 +86,58 @@ class Decoder:
 
     def process(self):
         """
-
+        Instruct the decoder to process data until the read callback signifies
+        the end of the stream.
         """
         if not _lib.FLAC__stream_decoder_process_until_end_of_stream(self._decoder):
             raise DecoderProcessException(self.state)
 
     def process_single(self):
         """
-
+        Decode one metadata block or audio frame.
         """
         if not _lib.FLAC__stream_decoder_process_single(self._decoder):
             raise DecoderProcessException(self.state)
 
 
-class StreamDecoder(Decoder):
+class StreamDecoder(_Decoder):
     """
-    A pyFLAC Stream Decoder.
+    A pyFLAC stream decoder converts a stream of FLAC encoded bytes
+    back to raw audio data.
+
+    The compressed data is passed in via the `process` method, and
+    blocks of raw uncompressed audio is passed back to the user via
+    the `write_callback`.
+
+    Args:
+        write_callback (fn): Function to call when there is uncompressed
+            audio data ready, see the example below for more information.
+
+    Examples:
+        An example write callback which writes the audio data to file
+        using SoundFile.
+
+        .. code-block:: python
+            :linenos:
+
+            import soundfile as sf
+
+            def write_callback(self,
+                               audio: np.ndarray,
+                               sample_rate: int,
+                               num_channels: int,
+                               num_samples: int):
+
+                # Note: num_samples is the number of samples per channel
+                if self.output is None:
+                    self.output = sf.SoundFile(
+                        'output.wav', mode='w', channels=num_channels,
+                        samplerate=sample_rate
+                    )
+                self.output.write(audio)
+
+    Raises:
+        DecoderInitException: If initialisation of the decoder fails
     """
     def __init__(self,
                  read_callback: Callable[[bytearray], int],
@@ -119,9 +163,15 @@ class StreamDecoder(Decoder):
             raise DecoderInitException(rc)
 
 
-class FileDecoder(Decoder):
+class FileDecoder(_Decoder):
     """
-    A pyFLAC File Decoder.
+    The pyFLAC file decoder writes the decoded audio data directly to a file.
+
+    Args:
+        filename (str): Path to the output FLAC file
+
+    Raises:
+        DecoderInitException: If initialisation of the decoder fails
     """
     def __init__(self, filename: str):
         super().__init__()
@@ -200,7 +250,8 @@ def _write_callback(decoder,
                     buffer,
                     client_data):
     """
-
+    Called internally when the decoder has uncompressed
+    raw audio data to output.
     """
     decoder = _ffi.from_handle(client_data)
 
@@ -208,7 +259,7 @@ def _write_callback(decoder,
     bytes_per_frame = frame.header.blocksize * np.dtype(np.int32).itemsize
 
     if frame.header.bits_per_sample != 16:
-        raise ValueError
+        raise ValueError('Only int16 data type is supported')
 
     metadata = {
         'block_size': int(frame.header.blocksize),
@@ -240,11 +291,11 @@ def _error_callback(decoder,
                     status,
                     client_data):
     """
-
+    Called whenever an error occurs during decoding.
     """
-    logger = logging.getLogger(__name__)
+    decoder = _ffi.from_handle(client_data)
     message = _ffi.string(
         _lib.FLAC__StreamDecoderErrorStatusString[status]).decode()
-    logger.error(f'decoder error: {message}')
+    decoder.logger.error(f'decoder error: {message}')
 
     raise DecoderErrorException(status)

@@ -1,5 +1,7 @@
 [run]
 relative_files = True
+source = pyflac
+
 omit =
     # omit anything in a test directory
     */tests/*

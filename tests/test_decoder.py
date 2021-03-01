@@ -11,7 +11,7 @@
 
 import unittest
 
-from pyflac.decoder import Decoder
+from pyflac.decoder import _Decoder
 
 
 class TestDecoder(unittest.TestCase):
@@ -19,7 +19,7 @@ class TestDecoder(unittest.TestCase):
     Test Suite for the generic decoder class
     """
     def setUp(self):
-        self.decoder = Decoder()
+        self.decoder = _Decoder()
 
     def test_state(self):
         """ Test that the state returns a valid string """
