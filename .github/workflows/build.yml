@@ -1,0 +1,61 @@
+name: build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version of libFLAC to build'
+        required: false
+        default: '1.3.3'
+      debug:
+        description: 'Enable debug'
+        required: false
+        default: 'no'
+
+jobs:
+  build_linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y \
+          autoconf \
+          clang \
+          libtool \
+          wget
+    - name: Download libFLAC
+      run: |
+        wget https://ftp.osuosl.org/pub/xiph/releases/flac/flac-${{ github.event.inputs.version }}.tar.xz
+        tar -zxvf flac-${{ github.event.inputs.version }}.tar.xz
+    - name: Build libFLAC
+      run: |
+        cd flac-${{ github.event.inputs.version }}
+        CC=clang ./configure --with-ogg=no --enable-debug=${{ github.event.inputs.debug }}
+        make
+        ls -l src/libFLAC/.libs
+
+  build_macos:
+    runs-on: macos-latest
+    steps:
+    - name: Install dependencies
+      run: brew install wget
+    - name: Download libFLAC
+      run: |
+        wget https://ftp.osuosl.org/pub/xiph/releases/flac/flac-${{ github.event.inputs.version }}.tar.xz
+        tar -zxvf flac-${{ github.event.inputs.version }}.tar.xz
+    - name: Build libFLAC
+      run: |
+        cd flac-${{ github.event.inputs.version }}
+        CC=clang ./configure --with-ogg=no --enable-debug=${{ github.event.inputs.debug }}
+        make
+        mkdir ../darwin-x86_64
+        cp src/libFLAC/.libs/libFLAC.8.dylib ../darwin-x86_64/libFLAC.dylib
+        cd ../darwin-x86_64
+        install_name_tool -id @rpath/libFLAC.dylib libFLAC.dylib
+    - name: Upload macOS library
+      uses: actions/upload-artifact@v1
+      with:
+        name: darwin-x86_64
+        path: darwin-x86_64
+

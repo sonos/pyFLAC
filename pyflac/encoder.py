@@ -32,6 +32,10 @@ class EncoderProcessException(Exception):
     """
     An exception raised if an error occurs during the
     processing of audio data.
+
+    TODO:
+        - Document values
+        - How do we do this in Chirp Python?
     """
     pass
 
@@ -40,6 +44,7 @@ class _Encoder:
     """
     A pyFLAC Encoder.
 
+    This generic class handles interaction with libFLAC.
     """
     def __init__(self):
         self._initialised = False
@@ -61,6 +66,9 @@ class _Encoder:
         On processing the first buffer of samples, the encoder is set up
         for the given amount of channels and data type. This is automatically
         determined from the numpy array.
+
+        Raises:
+            EncoderProcessException: if an error occurs when processing the samples
         """
         if not isinstance(samples, np.ndarray):
             raise ValueError('Processing only supports numpy arrays')
@@ -79,17 +87,20 @@ class _Encoder:
         samples = np.ascontiguousarray(samples).astype(np.int32)
         samples_ptr = _ffi.from_buffer('int32_t[]', samples)
 
-        if not _lib.FLAC__stream_encoder_process_interleaved(self._encoder, samples_ptr, len(samples)):
-            _ffi.release(samples_ptr)
+        result = _lib.FLAC__stream_encoder_process_interleaved(self._encoder, samples_ptr, len(samples))
+        _ffi.release(samples_ptr)
+
+        if not result:
             raise EncoderProcessException(self.state)
-        else:
-            _ffi.release(samples_ptr)
 
     def finish(self) -> bool:
         """
         Finish the encoding process. This flushes the encoding buffer,
         releases resources, resets the encoder settings to their defaults,
         and returns the encoder state to `FLAC__STREAM_ENCODER_UNINITIALIZED`.
+
+        Returns:
+            (bool): `True` if successful, `False` otherwise.
         """
         if self._encoder:
             return _lib.FLAC__stream_encoder_finish(self._encoder)
@@ -100,7 +111,7 @@ class _Encoder:
     @property
     def state(self) -> str:
         """
-        str: Property to return the encoder state as a human readable string
+        str: Property to return the encoder state as a human readable string.
         """
         c_state = _lib.FLAC__stream_encoder_get_resolved_state_string(self._encoder)
         return _ffi.string(c_state).decode()
@@ -108,7 +119,7 @@ class _Encoder:
     # -- Getters & Setters
 
     @property
-    def verify(self) -> bool:
+    def _verify(self) -> bool:
         """
         bool: Property to get/set the encoder verify functionality.
             If set `True`, the encoder will verify its own encoded output
@@ -117,20 +128,20 @@ class _Encoder:
         """
         return _lib.FLAC__stream_encoder_get_verify(self._encoder)
 
-    @verify.setter
-    def verify(self, value: bool):
+    @_verify.setter
+    def _verify(self, value: bool):
         if not _lib.FLAC__stream_encoder_set_verify(self._encoder, bool(value)):
             raise ValueError(f'Failed to set verify to {value}')
 
     @property
-    def channels(self) -> int:
+    def _channels(self) -> int:
         """
         int: Property to get/set the number of audio channels to encode.
         """
         return _lib.FLAC__stream_encoder_get_channels(self._encoder)
 
-    @channels.setter
-    def channels(self, value: int):
+    @_channels.setter
+    def _channels(self, value: int):
         if not isinstance(value, int):
             raise ValueError('Number of channels must be an integer')
 
@@ -138,14 +149,14 @@ class _Encoder:
             raise ValueError(f'Failed to set channels to {value}')
 
     @property
-    def bits_per_sample(self) -> int:
+    def _bits_per_sample(self) -> int:
         """
         int: Property to get/set the resolution of the input to be encoded.
         """
         return _lib.FLAC__stream_encoder_get_bits_per_sample(self._encoder)
 
-    @bits_per_sample.setter
-    def bits_per_sample(self, value: int):
+    @_bits_per_sample.setter
+    def _bits_per_sample(self, value: int):
         if not isinstance(value, int):
             raise ValueError('Number of bits per sample must be an integer')
 
@@ -153,14 +164,14 @@ class _Encoder:
             raise ValueError(f'Failed to set bits per sample to {value}')
 
     @property
-    def sample_rate(self) -> int:
+    def _sample_rate(self) -> int:
         """
         int: Property to get/set the sample rate (in Hz) of the input to be encoded.
         """
         return _lib.FLAC__stream_encoder_get_sample_rate(self._encoder)
 
-    @sample_rate.setter
-    def sample_rate(self, value: int):
+    @_sample_rate.setter
+    def _sample_rate(self, value: int):
         if not isinstance(value, int):
             raise ValueError('The sample rate must be an integer in Hz')
 
@@ -168,15 +179,15 @@ class _Encoder:
             raise ValueError(f'Failed to set sample rate to {value}Hz')
 
     @property
-    def blocksize(self) -> int:
+    def _blocksize(self) -> int:
         """
         int: Property to get/set the number of samples to use per frame.
             Use `0` to let the encoder estimate a blocksize - this is usually best.
         """
         return _lib.FLAC__stream_encoder_get_blocksize(self._encoder)
 
-    @blocksize.setter
-    def blocksize(self, value: int):
+    @_blocksize.setter
+    def _blocksize(self, value: int):
         if not isinstance(value, int):
             raise ValueError('The block size must be an integer')
 
@@ -184,11 +195,11 @@ class _Encoder:
             raise ValueError(f'Failed to set block size to {value}')
 
     @property
-    def compression_level(self) -> int:
+    def _compression_level(self) -> int:
         raise NotImplementedError
 
-    @compression_level.setter
-    def compression_level(self, value: int):
+    @_compression_level.setter
+    def _compression_level(self, value: int):
         if not isinstance(value, int):
             raise ValueError('The compression level must be an integer')
 
@@ -198,7 +209,53 @@ class _Encoder:
 
 class StreamEncoder(_Encoder):
     """
-    A pyFLAC Stream Encoder.
+    The pyFLAC stream encoder is used for real-time compression of
+    raw audio data.
+
+    Raw audio data is passed in via the `process` method, and chunks
+    of compressed data is passed back to the user via the `write_callback`.
+
+    Args:
+        sample_rate (int): The raw audio sample rate (Hz)
+        write_callback (fn): Function to call when there is compressed
+            data ready, see the example below for more information.
+        compression_level (int): The compression level parameter that
+            varies from 0 (fastest) to 8 (slowest). The default setting
+            is 5, see https://en.wikipedia.org/wiki/FLAC for more details.
+        blocksize (int): The size of the block to be returned in the
+            callback. The default is 0 which allows libFLAC to determine
+            the best block size.
+        verify (bool): If `True`, the encoder will verify it's own
+            encoded output by feeding it through an internal decoder and
+            comparing the original signal against the decoded signal.
+            If a mismatch occurs, the `process` method will raise a
+            `EncoderProcessException`.  Note that this will slow the
+            encoding process by the extra time required for decoding and comparison.
+
+    Examples:
+        An example write callback which adds the encoded data to a queue for
+        later processing.
+
+        .. code-block:: python
+            :linenos:
+
+            def write_callback(self,
+                               buffer: bytes,
+                               num_bytes: int,
+                               num_samples: int,
+                               current_frame: int):
+                if num_samples == 0:
+                    # If there are no samples in the encoded data, this is
+                    # a FLAC header. The header data will arrive in several
+                    # different callbacks. Otherwise `num_samples` will be
+                    # the block size value.
+                    pass
+
+                self.queue.append(buffer)
+                self.total_bytes += num_bytes
+
+    Raises:
+        ValueError: If any invalid values are passed in to the constructor.
     """
     def __init__(self,
                  sample_rate: int,
@@ -210,10 +267,10 @@ class StreamEncoder(_Encoder):
 
         self.write_callback = write_callback
 
-        self.sample_rate = sample_rate
-        self.blocksize = blocksize
-        self.compression_level = compression_level
-        self.verify = verify
+        self._sample_rate = sample_rate
+        self._blocksize = blocksize
+        self._compression_level = compression_level
+        self._verify = verify
 
     def _init(self):
         rc = _lib.FLAC__stream_encoder_init_stream(
@@ -232,25 +289,47 @@ class StreamEncoder(_Encoder):
 
 class FileEncoder(_Encoder):
     """
-    A pyFLAC File Encoder.
+    The pyFLAC file encoder writes the encoded audio data directly to a file.
+
+    Args:
+        filename (str): Path to the output FLAC file
+        sample_rate (int): The raw audio sample rate (Hz)
+        compression_level (int): The compression level parameter that
+            varies from 0 (fastest) to 8 (slowest). The default setting
+            is 5, see https://en.wikipedia.org/wiki/FLAC for more details.
+        blocksize (int): The size of the block to be returned in the
+            callback. The default is 0 which allows libFLAC to determine
+            the best block size.
+        verify (bool): If `True`, the encoder will verify it's own
+            encoded output by feeding it through an internal decoder and
+            comparing the original signal against the decoded signal.
+            If a mismatch occurs, the `process` method will raise a
+            `EncoderProcessException`.  Note that this will slow the
+            encoding process by the extra time required for decoding and comparison.
+
+    Raises:
+        ValueError: If any invalid values are passed in to the constructor.
     """
     def __init__(self,
                  filename: str,
                  sample_rate: int,
-                 blocksize: int = 0,
                  compression_level: int = 5,
+                 blocksize: int = 0,
                  verify: bool = False):
         super().__init__()
         self.__filename = filename
 
-        self.sample_rate = sample_rate
-        self.blocksize = blocksize
-        self.compression_level = compression_level
-        self.verify = verify
+        self._sample_rate = sample_rate
+        self._blocksize = blocksize
+        self._compression_level = compression_level
+        self._verify = verify
 
     def _init(self):
         """
-        Initialise the encoder to write to a file
+        Initialise the encoder to write to a file.
+
+        Raises:
+            EncoderInitException: if initialisation fails.
         """
         c_filename = _ffi.new('char[]', self.__filename.encode('utf-8'))
         rc = _lib.FLAC__stream_encoder_init_file(

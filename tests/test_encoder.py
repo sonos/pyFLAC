@@ -19,7 +19,8 @@ from pyflac.encoder import (
     _Encoder,
     StreamEncoder,
     FileEncoder,
-    EncoderInitException
+    EncoderInitException,
+    EncoderProcessException
 )
 
 
@@ -88,7 +89,7 @@ class TestStreamEncoder(unittest.TestCase):
     def test_process_invalid_float32_samples(self):
         """ Test than an exception is raised when trying to process float32 samples """
         test_samples = np.random.rand(self.BLOCKSIZE, self.CHANNELS).astype('float32')
-        with self.assertRaises(EncoderInitException):
+        with self.assertRaises(EncoderProcessException):
             self.encoder.process(test_samples)
 
     def test_process_invalid_channels(self):
