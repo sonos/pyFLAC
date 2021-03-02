@@ -5,8 +5,11 @@
 .. only:: html
 
 
+API Reference
+=============
+
 Encoder
-=======
+-------
 
 To encode raw audio data with pyFLAC you can either write encoded
 data directly to a file or process in real-time.
@@ -22,7 +25,7 @@ data directly to a file or process in real-time.
    :inherited-members:
 
 Decoder
-=======
+-------
 
 .. autoclass:: pyflac.FileDecoder
    :members:

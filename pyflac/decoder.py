@@ -173,8 +173,12 @@ class FileDecoder(_Decoder):
     Raises:
         DecoderInitException: If initialisation of the decoder fails
     """
-    def __init__(self, filename: str):
+    def __init__(self,
+                 filename: str,
+                 write_callback: Callable[[bytearray, int], int]):
         super().__init__()
+
+        self.write_callback = write_callback
 
         c_filename = _ffi.new('char[]', filename.encode('utf-8'))
         rc = _lib.FLAC__stream_decoder_init_file(
