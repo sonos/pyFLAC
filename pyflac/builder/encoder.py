@@ -28,12 +28,10 @@ elif system == 'Linux':
     else:
         architecture = 'linux-x86_64'
 elif system == 'Windows':
-    builder_path = os.path.dirname(os.path.realpath(__file__))
-    base_path = os.path.abspath(os.path.join(builder_path, os.pardir))
     if platform.architecture()[0] == '32bit':
-        build_kwargs['library_dirs'].append(os.path.join(base_path, 'libraries', 'windows-i686'))
+        architecture = 'windows-i686'
     else:
-        build_kwargs['library_dirs'].append(os.path.join(base_path, 'libraries', 'windows-x86_64'))
+        architecture = 'windows-x86_64'
 else:
     raise RuntimeError('%s platform is not supported' % system)
 
@@ -43,6 +41,12 @@ build_kwargs = {
     'library_dirs': ['./pyflac/libraries/' + architecture],
     'extra_link_args': ['-Wl,-rpath,./pyflac/libraries/' + architecture]
 }
+
+if system == 'Windows':
+    builder_path = os.path.dirname(os.path.realpath(__file__))
+    base_path = os.path.abspath(os.path.join(builder_path, os.pardir))
+    build_kwargs['library_dirs'] = [os.path.join(base_path, 'libraries', architecture)]
+    del build_kwargs['extra_link_args']
 
 
 ffibuilder = cffi.FFI()

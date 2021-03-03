@@ -30,17 +30,6 @@ class DecoderInitException(Exception):
         return _ffi.string(_lib.FLAC__StreamDecoderInitStatusString[self.code]).decode()
 
 
-class DecoderErrorException(Exception):
-    """
-    An exception raised if the error callback is called.
-    """
-    def __init__(self, code):
-        self.code = code
-
-    def __str__(self):
-        return _ffi.string(_lib.FLAC__StreamDecoderErrorStatusString[self.code]).decode()
-
-
 class DecoderProcessException(Exception):
     """
     An exception raised if an error occurs during the
@@ -60,6 +49,7 @@ class _Decoder:
         Create a new libFLAC instance.
         This instance is automatically released when there are no more references to the decoder.
         """
+        self._error = None
         self._decoder = _ffi.gc(_lib.FLAC__stream_decoder_new(), _lib.FLAC__stream_decoder_delete)
         self._decoder_handle = _ffi.new_handle(self)
         self.logger = logging.getLogger(__name__)
@@ -90,13 +80,6 @@ class _Decoder:
         the end of the stream.
         """
         if not _lib.FLAC__stream_decoder_process_until_end_of_stream(self._decoder):
-            raise DecoderProcessException(self.state)
-
-    def process_single(self):
-        """
-        Decode one metadata block or audio frame.
-        """
-        if not _lib.FLAC__stream_decoder_process_single(self._decoder):
             raise DecoderProcessException(self.state)
 
 
@@ -140,8 +123,8 @@ class StreamDecoder(_Decoder):
         DecoderInitException: If initialisation of the decoder fails
     """
     def __init__(self,
-                 read_callback: Callable[[bytearray], int],
-                 write_callback: Callable[[bytearray, int], int]):
+                 read_callback: Callable[[int], bytearray],
+                 write_callback: Callable[[np.ndarray, int, int, int], None]):
         super().__init__()
 
         self.read_callback = read_callback
@@ -175,7 +158,7 @@ class FileDecoder(_Decoder):
     """
     def __init__(self,
                  filename: str,
-                 write_callback: Callable[[bytearray, int], int]):
+                 write_callback: Callable[[np.ndarray, int, int, int], None]):
         super().__init__()
 
         self.write_callback = write_callback
@@ -194,7 +177,7 @@ class FileDecoder(_Decoder):
             raise DecoderInitException(rc)
 
 
-@_ffi.def_extern()
+@_ffi.def_extern(error=_lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT)
 def _read_callback(decoder,
                    byte_buffer,
                    num_bytes,
@@ -203,22 +186,25 @@ def _read_callback(decoder,
     Called internally when the decoder needs more input data.
     """
     decoder = _ffi.from_handle(client_data)
+    if decoder._error:
+        return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
 
     maximum_bytes = int(num_bytes[0])
-    data = bytearray(maximum_bytes)
-    actual_bytes = decoder.read_callback(data, maximum_bytes)
+    data = decoder.read_callback(maximum_bytes)
 
-    if actual_bytes > maximum_bytes:
-        return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
-    elif actual_bytes == 0:
-        num_bytes[0] = 0
-        return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
-    elif actual_bytes == -1:
-        return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
-    else:
+    if data:
+        actual_bytes = len(data)
+        if actual_bytes > maximum_bytes:
+            # TODO: we could stash this away and handle ourselves
+            decoder.logger.error('Number of bytes given exceeds maximum')
+            return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
+
         num_bytes[0] = actual_bytes
         _ffi.memmove(byte_buffer, data, actual_bytes)
         return _lib.FLAC__STREAM_DECODER_READ_STATUS_CONTINUE
+    else:
+        num_bytes[0] = 0
+        return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
 
 
 @_ffi.def_extern()
@@ -248,7 +234,7 @@ def _eof_callback(decoder,
     raise NotImplementedError
 
 
-@_ffi.def_extern()
+@_ffi.def_extern(error=_lib.FLAC__STREAM_DECODER_WRITE_STATUS_ABORT)
 def _write_callback(decoder,
                     frame,
                     buffer,
@@ -265,20 +251,18 @@ def _write_callback(decoder,
     if frame.header.bits_per_sample != 16:
         raise ValueError('Only int16 data type is supported')
 
-    metadata = {
-        'block_size': int(frame.header.blocksize),
-        'channels': int(frame.header.channels),
-        'sample_rate': int(frame.header.sample_rate),
-        'bits_per_sample': int(frame.header.bits_per_sample)
-    }
-
     for ch in range(0, frame.header.channels):
         cbuffer = _ffi.buffer(buffer[ch], bytes_per_frame)
         channels.append(
             np.frombuffer(cbuffer, dtype='int32').astype(np.int16)
         )
     output = np.column_stack(channels)
-    decoder.write_callback(output, metadata)
+    decoder.write_callback(
+        output,
+        int(frame.header.sample_rate),
+        int(frame.header.channels),
+        int(frame.header.blocksize)
+    )
 
     return _lib.FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE
 
@@ -301,5 +285,4 @@ def _error_callback(decoder,
     message = _ffi.string(
         _lib.FLAC__StreamDecoderErrorStatusString[status]).decode()
     decoder.logger.error(f'decoder error: {message}')
-
-    raise DecoderErrorException(status)
+    decoder._error = status

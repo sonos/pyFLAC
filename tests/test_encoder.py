@@ -15,11 +15,17 @@ import unittest
 
 import numpy as np
 import soundfile as sf
-from pyflac.encoder import (
-    _Encoder,
+from pyflac.encoder import _Encoder
+from pyflac import (
     StreamEncoder,
     FileEncoder,
+    EncoderInitException,
 )
+
+DEFAULT_CHANNELS = 1
+DEFAULT_SAMPLE_RATE = 44100
+DEFAULT_BITS_PER_SAMPLE = 16
+DEFAULT_BLOCKSIZE = 1024
 
 
 class TestEncoder(unittest.TestCase):
@@ -28,6 +34,11 @@ class TestEncoder(unittest.TestCase):
     """
     def setUp(self):
         self.encoder = _Encoder()
+
+    def test_verify(self):
+        """ Test that the verify setter returns the same value from libFLAC """
+        self.encoder._verify = True
+        self.assertTrue(self.encoder._verify)
 
     def test_channels(self):
         """ Test that the channels setter returns the same value from libFLAC """
@@ -53,30 +64,38 @@ class TestEncoder(unittest.TestCase):
         self.encoder._blocksize = test_blocksize
         self.assertEqual(self.encoder._blocksize, test_blocksize)
 
+    def test_compression_level(self):
+        """ Test that the compression level setter returns the same value from libFLAC """
+        test_compression_level = 8
+        self.encoder._compression_level = test_compression_level
+
     def test_state(self):
         """ Test that the state returns a valid string """
         self.assertEqual(self.encoder.state, 'FLAC__STREAM_ENCODER_UNINITIALIZED')
 
+    def test_invalid_process(self):
+        """ Test that an error is returned if a numpy array is not provided """
+        with self.assertRaises(TypeError):
+            self.encoder.process([1, 2, 3, 4])
+
 
 class TestStreamEncoder(unittest.TestCase):
     """
-    Test Suite for the stream encoder class
+    Test suite for the stream encoder class
     """
-    CHANNELS = 1
-    SAMPLE_RATE = 44100
-    BITS_PER_SAMPLE = 16
-    BLOCKSIZE = 1024
-
     def setUp(self):
         self.callback_called = False
-        self.encoder = StreamEncoder(
-            sample_rate=self.SAMPLE_RATE,
-            blocksize=self.BLOCKSIZE,
-            write_callback=self._write_callback,
-        )
+        self.encoder = None
+        self.default_kwargs = {
+            'sample_rate': DEFAULT_SAMPLE_RATE,
+            'blocksize': DEFAULT_BLOCKSIZE,
+            'write_callback': self._write_callback,
+            'verify': True
+        }
 
     def tearDown(self):
-        self.encoder.finish()
+        if self.encoder:
+            self.encoder.finish()
 
     def _write_callback(self,
                         buffer: bytes,
@@ -85,43 +104,35 @@ class TestStreamEncoder(unittest.TestCase):
                         current_frame: int):
         self.callback_called = True
 
-    def test_process_invalid_channels(self):
-        """ Test that an exception is raised if the number of channels are changed """
-        correct_samples = np.random.rand(self.BLOCKSIZE, self.CHANNELS).astype('int16')
-        incorrect_samples = np.random.rand(self.BLOCKSIZE, self.CHANNELS + 1).astype('int16')
-        self.encoder.process(correct_samples)
-        with self.assertRaises(ValueError):
-            self.encoder.process(incorrect_samples)
+    def test_invalid_sample_rate(self):
+        """ Test than an exception is raised if given an invalid sample rate """
+        self.encoder = StreamEncoder(sample_rate=1000000, write_callback=self._write_callback)
+        with self.assertRaises(EncoderInitException) as err:
+            self.encoder._init()
+            self.assertEqual(str(err), 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE')
 
-    def test_process_invalid_bits_per_sample(self):
-        """ Test that an exception is raised if the bits per sample do not match """
-        correct_samples = np.random.rand(self.BLOCKSIZE, self.CHANNELS).astype('int16')
-        incorrect_samples = np.random.rand(self.BLOCKSIZE, self.CHANNELS).astype('int8')
-        self.encoder.process(correct_samples)
-        with self.assertRaises(ValueError):
-            self.encoder.process(incorrect_samples)
+    def test_invalid_blocksize(self):
+        """ Test than an exception is raised if given an invalid block size """
+        self.encoder = StreamEncoder(
+            sample_rate=DEFAULT_SAMPLE_RATE,
+            blocksize=1000000,
+            write_callback=self._write_callback
+        )
+        with self.assertRaises(EncoderInitException) as err:
+            self.encoder._init()
+            self.assertEqual(str(err), 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE')
 
     def test_process_mono(self):
         """ Test that an array of int16 mono samples can be processed """
-        self.encoder = StreamEncoder(
-            sample_rate=self.SAMPLE_RATE,
-            blocksize=self.BLOCKSIZE,
-            write_callback=self._write_callback,
-            verify=True
-        )
-        test_samples = np.random.rand(self.BLOCKSIZE, 1).astype('int16')
+        self.encoder = StreamEncoder(**self.default_kwargs)
+        test_samples = np.random.rand(DEFAULT_BLOCKSIZE, 1).astype('int16')
         self.encoder.process(test_samples)
         self.assertTrue(self.callback_called)
 
     def test_process_stereo(self):
         """ Test that an array of int16 stereo samples can be processed """
-        self.encoder = StreamEncoder(
-            sample_rate=self.SAMPLE_RATE,
-            blocksize=self.BLOCKSIZE,
-            write_callback=self._write_callback,
-            verify=True
-        )
-        test_samples = np.random.rand(self.BLOCKSIZE, 2).astype('int16')
+        self.encoder = StreamEncoder(**self.default_kwargs)
+        test_samples = np.random.rand(DEFAULT_BLOCKSIZE, 2).astype('int16')
         self.encoder.process(test_samples)
         self.assertTrue(self.callback_called)
 
@@ -130,40 +141,67 @@ class TestFileEncoder(unittest.TestCase):
     """
     Test Suite for the file encoder class.
     """
-    CHANNELS = 1
-    SAMPLE_RATE = 44100
-    BITS_PER_SAMPLE = 16
-    BLOCKSIZE = 1024
-
     def setUp(self):
         self.encoder = None
         self.file = tempfile.NamedTemporaryFile(suffix='.flac')
+        self.default_kwargs = {
+            'filename': self.file.name,
+            'sample_rate': DEFAULT_SAMPLE_RATE,
+            'blocksize': DEFAULT_BLOCKSIZE,
+            'verify': True
+        }
+
+    def tearDown(self):
+        if self.encoder:
+            self.encoder.finish()
+
+    def test_invalid_sample_rate(self):
+        """ Test than an exception is raised if given an invalid sample rate """
+        self.encoder = FileEncoder(filename=self.file.name, sample_rate=1000000)
+        with self.assertRaises(EncoderInitException):
+            self.encoder._init()
+
+    def test_invalid_blocksize(self):
+        """ Test than an exception is raised if given an invalid block size """
+        self.encoder = FileEncoder(
+            filename=self.file.name,
+            sample_rate=DEFAULT_SAMPLE_RATE,
+            blocksize=1000000,
+        )
+        with self.assertRaises(EncoderInitException):
+            self.encoder._init()
 
     def test_state(self):
         """ Test that the initial state is ok """
-        self.encoder = FileEncoder(
-            filename=self.file.name,
-            sample_rate=self.SAMPLE_RATE,
-            blocksize=self.BLOCKSIZE,
-            verify=True
-        )
+        self.encoder = FileEncoder(**self.default_kwargs)
         self.assertEqual(self.encoder.state, 'FLAC__STREAM_ENCODER_UNINITIALIZED')
-        test_samples = np.random.rand(self.BLOCKSIZE, self.CHANNELS).astype('int16')
+        test_samples = np.random.rand(DEFAULT_BLOCKSIZE, DEFAULT_CHANNELS).astype('int16')
         self.encoder.process(test_samples)
         self.assertEqual(self.encoder.state, 'FLAC__STREAM_ENCODER_OK')
 
+    def test_process_mono_file(self):
+        """ Test that a mono WAV file can be processed """
+        test_path = pathlib.Path(__file__).parent.absolute() / 'data/mono.wav'
+        test_samples, sr = sf.read(test_path, dtype='int16')
+        self.default_kwargs['sample_rate'] = sr
+        self.encoder = FileEncoder(**self.default_kwargs)
+        self.encoder.process(test_samples[:DEFAULT_BLOCKSIZE])
+
     def test_process_stereo_file(self):
         """ Test that a stereo WAV file can be processed """
-        test_path = pathlib.Path(__file__).parent.absolute() / 'data/piano.wav'
+        test_path = pathlib.Path(__file__).parent.absolute() / 'data/stereo.wav'
         test_samples, sr = sf.read(test_path, dtype='int16')
-        self.encoder = FileEncoder(
-            filename=self.file.name,
-            sample_rate=sr,
-            blocksize=0,
-            verify=True
-        )
+        self.default_kwargs['sample_rate'] = sr
+        self.encoder = FileEncoder(**self.default_kwargs)
         self.encoder.process(test_samples)
-        self.encoder.finish()
+
+    def test_process_5_1_surround_file(self):
+        """ Test that a 5.1 surround WAV file can be processed """
+        test_path = pathlib.Path(__file__).parent.absolute() / 'data/surround.wav'
+        test_samples, sr = sf.read(test_path, dtype='int16')
+        self.default_kwargs['sample_rate'] = sr
+        self.encoder = FileEncoder(**self.default_kwargs)
+        self.encoder.process(test_samples)
 
 
 if __name__ == '__main__':

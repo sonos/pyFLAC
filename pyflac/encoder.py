@@ -25,6 +25,7 @@ class EncoderInitException(Exception):
     """
     def __init__(self, code):
         self.code = code
+        super().__init__(str(self))
 
     def __str__(self):
         return _ffi.string(_lib.FLAC__StreamEncoderInitStatusString[self.code]).decode()
@@ -71,19 +72,17 @@ class _Encoder:
         determined from the numpy array.
 
         Raises:
+            TypeError: if a numpy array of samples is not provided
             EncoderProcessException: if an error occurs when processing the samples
         """
         if not isinstance(samples, np.ndarray):
-            raise ValueError('Processing only supports numpy arrays')
+            raise TypeError('Processing only supports numpy arrays')
 
-        if self._initialised:
-            if self.channels != samples.shape[1]:
-                raise ValueError('Number of channels has changed')
-
-            if self.bits_per_sample != samples.dtype.itemsize * 8:
-                raise ValueError('The number of bits per sample has changed')
-        else:
-            self.channels = samples.shape[1]
+        if not self._initialised:
+            try:
+                self.channels = samples.shape[1]
+            except IndexError:
+                self.channels = 1
             self.bits_per_sample = samples.dtype.itemsize * 8
             self._init()
 
@@ -131,8 +130,7 @@ class _Encoder:
 
     @_verify.setter
     def _verify(self, value: bool):
-        if not _lib.FLAC__stream_encoder_set_verify(self._encoder, bool(value)):
-            raise ValueError(f'Failed to set verify to {value}')
+        _lib.FLAC__stream_encoder_set_verify(self._encoder, bool(value))
 
     @property
     def _channels(self) -> int:
@@ -143,11 +141,7 @@ class _Encoder:
 
     @_channels.setter
     def _channels(self, value: int):
-        if not isinstance(value, int):
-            raise ValueError('Number of channels must be an integer')
-
-        if not _lib.FLAC__stream_encoder_set_channels(self._encoder, value):
-            raise ValueError(f'Failed to set channels to {value}')
+        _lib.FLAC__stream_encoder_set_channels(self._encoder, value)
 
     @property
     def _bits_per_sample(self) -> int:
@@ -158,11 +152,7 @@ class _Encoder:
 
     @_bits_per_sample.setter
     def _bits_per_sample(self, value: int):
-        if not isinstance(value, int):
-            raise ValueError('Number of bits per sample must be an integer')
-
-        if not _lib.FLAC__stream_encoder_set_bits_per_sample(self._encoder, value):
-            raise ValueError(f'Failed to set bits per sample to {value}')
+        _lib.FLAC__stream_encoder_set_bits_per_sample(self._encoder, value)
 
     @property
     def _sample_rate(self) -> int:
@@ -173,11 +163,7 @@ class _Encoder:
 
     @_sample_rate.setter
     def _sample_rate(self, value: int):
-        if not isinstance(value, int):
-            raise ValueError('The sample rate must be an integer in Hz')
-
-        if not _lib.FLAC__stream_encoder_set_sample_rate(self._encoder, value):
-            raise ValueError(f'Failed to set sample rate to {value}Hz')
+        _lib.FLAC__stream_encoder_set_sample_rate(self._encoder, value)
 
     @property
     def _blocksize(self) -> int:
@@ -189,11 +175,7 @@ class _Encoder:
 
     @_blocksize.setter
     def _blocksize(self, value: int):
-        if not isinstance(value, int):
-            raise ValueError('The block size must be an integer')
-
-        if not _lib.FLAC__stream_encoder_set_blocksize(self._encoder, value):
-            raise ValueError(f'Failed to set block size to {value}')
+        _lib.FLAC__stream_encoder_set_blocksize(self._encoder, value)
 
     @property
     def _compression_level(self) -> int:
@@ -201,11 +183,7 @@ class _Encoder:
 
     @_compression_level.setter
     def _compression_level(self, value: int):
-        if not isinstance(value, int):
-            raise ValueError('The compression level must be an integer')
-
-        if not _lib.FLAC__stream_encoder_set_compression_level(self._encoder, value):
-            raise ValueError(f'Failed to set compression level to {value}')
+        _lib.FLAC__stream_encoder_set_compression_level(self._encoder, value)
 
 
 class StreamEncoder(_Encoder):
@@ -346,7 +324,7 @@ class FileEncoder(_Encoder):
         self._initialised = True
 
 
-@_ffi.def_extern()
+@_ffi.def_extern(error=_lib.FLAC__STREAM_ENCODER_WRITE_STATUS_FATAL_ERROR)
 def _write_callback(encoder,
                     byte_buffer,
                     num_bytes,

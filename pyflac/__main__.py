@@ -45,11 +45,11 @@ class Decoder:
     def process(self):
         self.decoder.process()
 
-    def callback(self, data, frame):
+    def callback(self, data, sample_rate, num_channels, num_samples):
         if self.output is None:
             self.output = sf.SoundFile(
-                self.args.output_file, mode='w', channels=frame['channels'],
-                samplerate=frame['sample_rate']
+                self.args.output_file, mode='w', channels=num_channels,
+                samplerate=sample_rate
             )
         self.output.write(data)
 

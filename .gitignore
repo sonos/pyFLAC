@@ -141,3 +141,6 @@ dmypy.json
 
 # Audio
 *.flac
+
+# Development
+.archive

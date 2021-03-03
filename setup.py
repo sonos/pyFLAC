@@ -23,7 +23,6 @@ setup(
     url='http://pyflac.readthedocs.io/en/latest/',
     download_url='https://github.com/Sonos-Inc/pyFLAC/archive/' + __version__ + '.tar.gz',
     packages=find_packages(),
-    include_package_data=True,
     setup_requires=['cffi>=1.4.0'],
     cffi_modules=[
         'pyflac/builder/encoder.py:ffibuilder',
