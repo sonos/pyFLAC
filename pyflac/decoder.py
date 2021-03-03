@@ -88,15 +88,28 @@ class StreamDecoder(_Decoder):
     A pyFLAC stream decoder converts a stream of FLAC encoded bytes
     back to raw audio data.
 
-    The compressed data is passed in via the `process` method, and
+    The compressed data is requested via the `read_callback`, and
     blocks of raw uncompressed audio is passed back to the user via
     the `write_callback`.
 
     Args:
+        read_callback (fn): Function to call when compressed bytes of
+            FLAC data are required for processing.
         write_callback (fn): Function to call when there is uncompressed
             audio data ready, see the example below for more information.
 
     Examples:
+        An example read callback returns bytes of compressed data to the
+        decoder
+
+        .. code-block:: python
+            :linenos:
+
+            def read_callback(self, num_bytes: int) -> bytes:
+                data = self.data[self.idx:self.idx + num_bytes]
+                self.idx += num_bytes
+                return data
+
         An example write callback which writes the audio data to file
         using SoundFile.
 
@@ -127,6 +140,7 @@ class StreamDecoder(_Decoder):
                  write_callback: Callable[[np.ndarray, int, int, int], None]):
         super().__init__()
 
+        self.excess = bytes()
         self.read_callback = read_callback
         self.write_callback = write_callback
 
@@ -152,6 +166,8 @@ class FileDecoder(_Decoder):
 
     Args:
         filename (str): Path to the output FLAC file
+        write_callback (fn): Function to call when there is uncompressed
+            audio data ready, see the example below for more information.
 
     Raises:
         DecoderInitException: If initialisation of the decoder fails
@@ -184,21 +200,43 @@ def _read_callback(decoder,
                    client_data):
     """
     Called internally when the decoder needs more input data.
+
+    If an exception is raised here, the abort status is returned.
     """
     decoder = _ffi.from_handle(client_data)
     if decoder._error:
-        return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
+        # ----------------------------------------------------------
+        # If an error has been issued via the error callback, raise
+        # it here to abort the processing of the stream.
+        # ----------------------------------------------------------
+        raise DecoderProcessException(decoder._error)
 
     maximum_bytes = int(num_bytes[0])
-    data = decoder.read_callback(maximum_bytes)
+    if decoder.excess:
+        # ----------------------------------------------------------
+        # Too many bytes were supplied in a previous callback, so
+        # pass them to the decoder here before requesting more.
+        # ----------------------------------------------------------
+        data = decoder.excess[:maximum_bytes]
+        decoder.excess = decoder.excess[maximum_bytes:]
+    else:
+        data = decoder.read_callback(maximum_bytes)
 
     if data:
+        # ----------------------------------------------------------
+        # If too much data has been provided, store it to process
+        # in the next callback.
+        # ----------------------------------------------------------
         actual_bytes = len(data)
         if actual_bytes > maximum_bytes:
-            # TODO: we could stash this away and handle ourselves
-            decoder.logger.error('Number of bytes given exceeds maximum')
-            return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
+            decoder.excess += data[maximum_bytes:]
+            data = data[:maximum_bytes]
+            actual_bytes = len(data)
 
+        # ----------------------------------------------------------
+        # Set the actual number of bytes provided by the user,
+        # and move the data in to the byte buffer.
+        # ----------------------------------------------------------
         num_bytes[0] = actual_bytes
         _ffi.memmove(byte_buffer, data, actual_bytes)
         return _lib.FLAC__STREAM_DECODER_READ_STATUS_CONTINUE
@@ -242,6 +280,8 @@ def _write_callback(decoder,
     """
     Called internally when the decoder has uncompressed
     raw audio data to output.
+
+    If an exception is raised here, the abort status is returned.
     """
     decoder = _ffi.from_handle(client_data)
 
@@ -251,6 +291,13 @@ def _write_callback(decoder,
     if frame.header.bits_per_sample != 16:
         raise ValueError('Only int16 data type is supported')
 
+    # --------------------------------------------------------------
+    # The buffer contains an array of pointers to decoded channels
+    # of data. Each pointer will point to an array of signed samples
+    # of length `frame.header.blocksize`.
+    #
+    # Channels will be ordered according to the FLAC specification.
+    # --------------------------------------------------------------
     for ch in range(0, frame.header.channels):
         cbuffer = _ffi.buffer(buffer[ch], bytes_per_frame)
         channels.append(
@@ -285,4 +332,4 @@ def _error_callback(decoder,
     message = _ffi.string(
         _lib.FLAC__StreamDecoderErrorStatusString[status]).decode()
     decoder.logger.error(f'decoder error: {message}')
-    decoder._error = status
+    decoder._error = message

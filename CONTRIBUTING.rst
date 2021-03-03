@@ -2,27 +2,37 @@ Contributing
 ------------
 
 If you find any bugs or other things that need improvement,
-please create an issue or a pull request at
+or would like to add additional features, please create an issue or a pull request at
 https://github.com/sonos/pyFLAC
 Contributions are always welcome!
 
-You should get the latest version from GitHub::
+You get started, grab the latest version of the code from GitHub::
 
    git clone https://github.com/sonos/pyFLAC.git
    cd pyflac
 
-To install the package for development, first build the encoder/decoder libraries using CFFI::
+To build the package for development::
 
    python3 pyflac/builder/encoder.py
 
    python3 pyflac/builder/decoder.py
 
-and then install with pip::
+you can also install your local copy with pip::
 
    pip3 install .
 
-Before submitting a pull request, make sure all tests are passing,
-and all of the example scripts run as they as should.
+Before submitting a pull request, make sure all tests are passing and the
+test coverage has not been decreased.
+
+Testing
+-------
+
+To run the test suite::
+
+   tox -r
+
+Documentation
+-------------
 
 If you make changes to the documentation, you can locally re-create the HTML
 pages using Sphinx_.

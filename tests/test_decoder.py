@@ -50,35 +50,24 @@ class TestStreamDecoder(unittest.TestCase):
         if self.decoder:
             self.decoder.finish()
 
-    def _read_callback(self, max_bytes):
-        data = self.data[self.idx:self.idx + max_bytes]
-        self.idx += max_bytes
+    def _read_callback(self, num_bytes):
+        data = self.data[self.idx:self.idx + num_bytes]
+        self.idx += num_bytes
         return data
 
-    def _read_too_much_callback(self, max_bytes):
-        return self.data[0:max_bytes + 1]
+    def _read_callback_with_exception(self, num_bytes):
+        raise RuntimeError('This should abort processing')
+
+    def _read_too_much_callback(self, num_bytes):
+        return self.data
 
     def _write_callback(self, data, rate, channels, samples):
         self.write_callback_called = True
 
-    def test_invalid_data(self):
-        """ Test that giving invalid data raises an exception """
-        self.data = bytearray(os.urandom(10000))
+    def test_read_invalid_data(self):
+        """ Test that reading invalid data raises an exception """
+        self.data = bytearray(os.urandom(100000))
         self.data_length = len(self.data)
-
-        with self.assertRaises(DecoderProcessException):
-            self.decoder = StreamDecoder(
-                read_callback=self._read_callback,
-                write_callback=self._write_callback
-            )
-            self.decoder.process()
-
-    def test_too_much_data(self):
-        """ Test that giving too much data raises an exception """
-        test_path = self.test_path / 'data/mono.flac'
-        with open(test_path, 'rb') as flac:
-            self.data = flac.read()
-            self.data_length = len(self.data)
 
         with self.assertRaises(DecoderProcessException):
             self.decoder = StreamDecoder(
@@ -86,6 +75,32 @@ class TestStreamDecoder(unittest.TestCase):
                 write_callback=self._write_callback
             )
             self.decoder.process()
+
+    def test_read_callback_exception(self):
+        """ Test that raising an exception in the callback aborts processing """
+        self.data = bytearray(os.urandom(1000000))
+        self.data_length = len(self.data)
+
+        with self.assertRaises(DecoderProcessException):
+            self.decoder = StreamDecoder(
+                read_callback=self._read_callback_with_exception,
+                write_callback=self._write_callback
+            )
+            self.decoder.process()
+
+    def test_too_much_data(self):
+        """ Test that passing too much data doesn't actually break anything """
+        test_path = self.test_path / 'data/stereo.flac'
+        with open(test_path, 'rb') as flac:
+            self.data = flac.read()
+            self.data_length = len(self.data)
+
+        self.decoder = StreamDecoder(
+            read_callback=self._read_too_much_callback,
+            write_callback=self._write_callback
+        )
+        self.decoder.process()
+        self.assertTrue(self.write_callback_called)
 
     def test_process_stereo(self):
         """ Test that stereo FLAC data can be decoded """

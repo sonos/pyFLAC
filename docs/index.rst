@@ -27,6 +27,9 @@ data directly to a file or process in real-time.
 Decoder
 -------
 
+To decode compressed data with pyFLAC you can either read the compressed
+data directly from a file or process in real-time.
+
 .. autoclass:: pyflac.FileDecoder
    :members:
    :undoc-members:

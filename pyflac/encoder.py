@@ -80,10 +80,10 @@ class _Encoder:
 
         if not self._initialised:
             try:
-                self.channels = samples.shape[1]
+                self._channels = samples.shape[1]
             except IndexError:
-                self.channels = 1
-            self.bits_per_sample = samples.dtype.itemsize * 8
+                self._channels = 1
+            self._bits_per_sample = samples.dtype.itemsize * 8
             self._init()
 
         samples = np.ascontiguousarray(samples).astype(np.int32)
@@ -334,6 +334,8 @@ def _write_callback(encoder,
     """
     Called internally when the encoder has compressed
     data ready to write.
+
+    If an exception is raised here, the abort status is returned.
     """
     encoder = _ffi.from_handle(client_data)
     buffer = bytes(_ffi.buffer(byte_buffer, num_bytes))

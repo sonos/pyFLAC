@@ -57,3 +57,7 @@ pyFLAC comes bundled with a command line tool to quickly convert between WAV and
 For more information, print the help info. ::
 
     pyflac --help
+
+.. note::
+    If you didn't install pyFLAC globally then the command line tool will not be installed on your PATH.
+    However you should still be able to access the tool with `python -m pyflac`.

@@ -48,7 +48,7 @@ class Codec:
         self.total_bytes += num_bytes
         self.queue.put(buffer)
 
-    def decoder_read_callback(self, max_bytes: int) -> bytes:
+    def decoder_read_callback(self, num_bytes: int) -> bytes:
         try:
             return self.queue.get(block=False)
         except queue.Empty:
