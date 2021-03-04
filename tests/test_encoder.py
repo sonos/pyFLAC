@@ -19,6 +19,7 @@ from pyflac.encoder import _Encoder
 from pyflac import (
     StreamEncoder,
     FileEncoder,
+    EncoderState,
     EncoderInitException,
 )
 
@@ -70,8 +71,9 @@ class TestEncoder(unittest.TestCase):
         self.encoder._compression_level = test_compression_level
 
     def test_state(self):
-        """ Test that the state returns a valid string """
-        self.assertEqual(self.encoder.state, 'FLAC__STREAM_ENCODER_UNINITIALIZED')
+        """ Test that the state returns uninitialised """
+        self.assertEqual(self.encoder.state, EncoderState.UNINITIALIZED)
+        self.assertEqual(str(self.encoder.state), 'FLAC__STREAM_ENCODER_UNINITIALIZED')
 
     def test_invalid_process(self):
         """ Test that an error is returned if a numpy array is not provided """
@@ -174,10 +176,10 @@ class TestFileEncoder(unittest.TestCase):
     def test_state(self):
         """ Test that the initial state is ok """
         self.encoder = FileEncoder(**self.default_kwargs)
-        self.assertEqual(self.encoder.state, 'FLAC__STREAM_ENCODER_UNINITIALIZED')
+        self.assertEqual(self.encoder.state, EncoderState.UNINITIALIZED)
         test_samples = np.random.rand(DEFAULT_BLOCKSIZE, DEFAULT_CHANNELS).astype('int16')
         self.encoder.process(test_samples)
-        self.assertEqual(self.encoder.state, 'FLAC__STREAM_ENCODER_OK')
+        self.assertEqual(self.encoder.state, EncoderState.OK)
 
     def test_process_mono_file(self):
         """ Test that a mono WAV file can be processed """

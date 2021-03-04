@@ -17,6 +17,7 @@ from pyflac.decoder import _Decoder
 from pyflac import (
     FileDecoder,
     StreamDecoder,
+    DecoderState,
     DecoderInitException,
     DecoderProcessException
 )
@@ -31,7 +32,8 @@ class TestDecoder(unittest.TestCase):
 
     def test_state(self):
         """ Test that the state returns a valid string """
-        self.assertEqual(self.decoder.state, 'FLAC__STREAM_DECODER_UNINITIALIZED')
+        self.assertEqual(self.decoder.state, DecoderState.UNINITIALIZED)
+        self.assertEqual(str(self.decoder.state), 'FLAC__STREAM_DECODER_UNINITIALIZED')
 
 
 class TestStreamDecoder(unittest.TestCase):
@@ -60,6 +62,9 @@ class TestStreamDecoder(unittest.TestCase):
 
     def _read_too_much_callback(self, num_bytes):
         return self.data
+
+    def _read_callback_end_of_stream(self, num_bytes):
+        return None
 
     def _write_callback(self, data, rate, channels, samples):
         self.write_callback_called = True
@@ -102,8 +107,17 @@ class TestStreamDecoder(unittest.TestCase):
         self.decoder.process()
         self.assertTrue(self.write_callback_called)
 
-    def test_process_stereo(self):
-        """ Test that stereo FLAC data can be decoded """
+    def test_end_of_stream(self):
+        """ Test that when the state reflects the end of stream from the callback """
+        self.decoder = StreamDecoder(
+            read_callback=self._read_callback_end_of_stream,
+            write_callback=self._write_callback
+        )
+        self.decoder.process()
+        self.assertEqual(self.decoder.state, DecoderState.END_OF_STREAM)
+
+    def test_process(self):
+        """ Test that FLAC data can be decoded """
         test_path = self.test_path / 'data/stereo.flac'
         with open(test_path, 'rb') as flac:
             self.data = flac.read()

@@ -9,6 +9,7 @@
 #
 # ------------------------------------------------------------------------------
 
+from enum import Enum
 import logging
 from typing import Callable
 
@@ -17,6 +18,29 @@ import numpy as np
 from pyflac._decoder import ffi as _ffi
 from pyflac._decoder import lib as _lib
 
+
+# -- State
+
+class DecoderState(Enum):
+    """
+    The decoder state as a Python enumeration
+    """
+    SEARCH_FOR_METADATA = _lib.FLAC__STREAM_DECODER_SEARCH_FOR_METADATA
+    READ_METADATA = _lib.FLAC__STREAM_DECODER_READ_METADATA
+    SEARCH_FOR_FRAME_SYNC = _lib.FLAC__STREAM_DECODER_SEARCH_FOR_FRAME_SYNC
+    READ_FRAME = _lib.FLAC__STREAM_DECODER_READ_FRAME
+    END_OF_STREAM = _lib.FLAC__STREAM_DECODER_END_OF_STREAM
+    OGG_ERROR = _lib.FLAC__STREAM_DECODER_OGG_ERROR
+    SEEK_ERROR = _lib.FLAC__STREAM_DECODER_SEEK_ERROR
+    ABORTED = _lib.FLAC__STREAM_DECODER_ABORTED
+    MEMORY_ALLOCATION_ERROR = _lib.FLAC__STREAM_DECODER_MEMORY_ALLOCATION_ERROR
+    UNINITIALIZED = _lib.FLAC__STREAM_DECODER_UNINITIALIZED
+
+    def __str__(self):
+        return _ffi.string(_lib.FLAC__StreamDecoderStateString[self.value]).decode()
+
+
+# -- Exceptions
 
 class DecoderInitException(Exception):
     """
@@ -37,6 +61,8 @@ class DecoderProcessException(Exception):
     """
     pass
 
+
+# -- Decoder
 
 class _Decoder:
     """
@@ -59,7 +85,7 @@ class _Decoder:
         Finish the decoding process.
 
         Flushes the decoding buffer, releases resources, resets the decoder
-        settings to their defaults, and returns the decoder state to `FLAC__STREAM_DECODER_UNINITIALIZED`.
+        settings to their defaults, and returns the decoder state to `DecoderState.UNINITIALIZED`.
 
         A well behaved program should always call this at the end.
         """
@@ -68,12 +94,11 @@ class _Decoder:
     # -- State
 
     @property
-    def state(self) -> str:
+    def state(self) -> DecoderState:
         """
-        str: Property to return the decoder state as a human readable string
+        DecoderState: Property to return the decoder state
         """
-        c_state = _lib.FLAC__stream_decoder_get_resolved_state_string(self._decoder)
-        return _ffi.string(c_state).decode()
+        return DecoderState(_lib.FLAC__stream_decoder_get_state(self._decoder))
 
     # -- Processing
 
@@ -89,9 +114,9 @@ class _Decoder:
             DecoderProcessException: if any fatal read, write, or memory allocation
                 error occurred (meaning decoding must stop)
         """
-        if (not _lib.FLAC__stream_decoder_process_until_end_of_stream(self._decoder)
-                or self.state == 'FLAC__STREAM_DECODER_ABORTED'):
-            raise DecoderProcessException(self.state)
+        result = _lib.FLAC__stream_decoder_process_until_end_of_stream(self._decoder)
+        if self.state != DecoderState.END_OF_STREAM and not result:
+            raise DecoderProcessException(str(self.state))
 
     def process_frame(self):
         """
@@ -103,7 +128,7 @@ class _Decoder:
                 error occurred (meaning decoding must stop)
         """
         if not _lib.FLAC__stream_decoder_process_single(self._decoder):
-            raise DecoderProcessException(self.state)
+            raise DecoderProcessException(str(self.state))
 
 
 class StreamDecoder(_Decoder):

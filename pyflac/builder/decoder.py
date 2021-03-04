@@ -89,6 +89,8 @@ typedef enum {
     FLAC__STREAM_DECODER_UNINITIALIZED
 } FLAC__StreamDecoderState;
 
+extern const char * const FLAC__StreamDecoderStateString[];
+
 typedef enum {
     FLAC__STREAM_DECODER_INIT_STATUS_OK = 0,
     FLAC__STREAM_DECODER_INIT_STATUS_UNSUPPORTED_CONTAINER,

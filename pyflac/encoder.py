@@ -9,6 +9,7 @@
 #
 # ------------------------------------------------------------------------------
 
+from enum import Enum
 import logging
 from typing import Callable
 
@@ -18,6 +19,26 @@ from pyflac._encoder import ffi as _ffi
 from pyflac._encoder import lib as _lib
 
 
+# -- State
+
+class EncoderState(Enum):
+    """
+    The encoder state as a Python enumeration
+    """
+    OK = _lib.FLAC__STREAM_ENCODER_OK
+    UNINITIALIZED = _lib.FLAC__STREAM_ENCODER_UNINITIALIZED
+    OGG_ERROR = _lib.FLAC__STREAM_ENCODER_OGG_ERROR
+    VERIFY_DECODER_ERROR = _lib.FLAC__STREAM_ENCODER_VERIFY_DECODER_ERROR
+    VERIFY_MISMATCH_IN_AUDIO_DATA = _lib.FLAC__STREAM_ENCODER_VERIFY_MISMATCH_IN_AUDIO_DATA
+    CLIENT_ERROR = _lib.FLAC__STREAM_ENCODER_CLIENT_ERROR
+    IO_ERROR = _lib.FLAC__STREAM_ENCODER_IO_ERROR
+    FRAMING_ERROR = _lib.FLAC__STREAM_ENCODER_FRAMING_ERROR
+    MEMORY_ALLOCATION_ERROR = _lib.FLAC__STREAM_ENCODER_MEMORY_ALLOCATION_ERROR
+
+    def __str__(self):
+        return _ffi.string(_lib.FLAC__StreamEncoderStateString[self.value]).decode()
+
+
 class EncoderInitException(Exception):
     """
     An exception raised if initialisation fails for a
@@ -25,7 +46,6 @@ class EncoderInitException(Exception):
     """
     def __init__(self, code):
         self.code = code
-        super().__init__(str(self))
 
     def __str__(self):
         return _ffi.string(_lib.FLAC__StreamEncoderInitStatusString[self.code]).decode()
@@ -93,13 +113,13 @@ class _Encoder:
         _ffi.release(samples_ptr)
 
         if not result:
-            raise EncoderProcessException(self.state)
+            raise EncoderProcessException(str(self.state))
 
     def finish(self) -> bool:
         """
         Finish the encoding process. This flushes the encoding buffer,
         releases resources, resets the encoder settings to their defaults,
-        and returns the encoder state to `FLAC__STREAM_ENCODER_UNINITIALIZED`.
+        and returns the encoder state to `EncoderState.UNINITIALIZED`.
 
         Returns:
             (bool): `True` if successful, `False` otherwise.
@@ -109,12 +129,11 @@ class _Encoder:
     # -- State
 
     @property
-    def state(self) -> str:
+    def state(self) -> EncoderState:
         """
-        str: Property to return the encoder state as a human readable string.
+        EncoderState: Property to return the encoder state
         """
-        c_state = _lib.FLAC__stream_encoder_get_resolved_state_string(self._encoder)
-        return _ffi.string(c_state).decode()
+        return EncoderState(_lib.FLAC__stream_encoder_get_state(self._encoder))
 
     # -- Getters & Setters
 

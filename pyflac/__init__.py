@@ -30,12 +30,14 @@ if platform.system() == 'Windows':
 from .encoder import (
     StreamEncoder,
     FileEncoder,
+    EncoderState,
     EncoderInitException,
     EncoderProcessException
 )
 from .decoder import (
     StreamDecoder,
     FileDecoder,
+    DecoderState,
     DecoderInitException,
     DecoderProcessException
 )

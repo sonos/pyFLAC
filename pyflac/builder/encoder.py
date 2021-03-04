@@ -90,6 +90,8 @@ typedef enum {
     FLAC__STREAM_ENCODER_MEMORY_ALLOCATION_ERROR
 } FLAC__StreamEncoderState;
 
+extern const char * const FLAC__StreamEncoderStateString[];
+
 typedef enum {
     FLAC__STREAM_ENCODER_INIT_STATUS_OK = 0,
     FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR,
