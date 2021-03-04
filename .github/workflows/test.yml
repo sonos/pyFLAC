@@ -49,3 +49,12 @@ jobs:
         pip install tox tox-gh-actions
     - name: Run tests
       run: tox
+
+  windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Check install
+      run: python setup.py install
