@@ -41,9 +41,9 @@ jobs:
         make
         ls -l src/libFLAC/.libs
         mkdir ../linux-x86_64
-        cp src/libFLAC/.libs/libFLAC.so.8.3.0 ../linux-x86_64/libFLAC.so
+        cp src/libFLAC/.libs/libFLAC.so.8.3.0 ../linux-x86_64/libFLAC-8.3.0.so
         cd ../linux-x86_64
-        patchelf --set-soname libFLAC.so libFLAC.so
+        patchelf --set-soname libFLAC-8.3.0.so libFLAC-8.3.0.so
     - name: Upload Linux library
       uses: actions/upload-artifact@v1
       with:
@@ -59,8 +59,8 @@ jobs:
         make
         ls -l src/libFLAC/.libs
         mkdir ../windows-x86_64
-        cp src/libFLAC/.libs/libFLAC-8.dll ../windows-x86_64/libFLAC.dll
-        cp src/libFLAC/.libs/libFLAC.dll.a ../windows-x86_64/FLAC.lib
+        cp src/libFLAC/.libs/libFLAC-8.dll ../windows-x86_64/
+        cp src/libFLAC/.libs/libFLAC.dll.a ../windows-x86_64/FLAC-8.lib
     - name: Upload Windows x64 library
       uses: actions/upload-artifact@v1
       with:
@@ -76,8 +76,8 @@ jobs:
         make
         ls -l src/libFLAC/.libs
         mkdir ../windows-i686
-        cp src/libFLAC/.libs/libFLAC-8.dll ../windows-i686/libFLAC.dll
-        cp src/libFLAC/.libs/libFLAC.dll.a ../windows-i686/FLAC.lib
+        cp src/libFLAC/.libs/libFLAC-8.dll ../windows-i686/
+        cp src/libFLAC/.libs/libFLAC.dll.a ../windows-i686/FLAC-8.lib
     - name: Upload Windows x64 library
       uses: actions/upload-artifact@v1
       with:
@@ -93,9 +93,9 @@ jobs:
         make
         ls -l src/libFLAC/.libs
         mkdir ../raspbian-armv7a
-        cp src/libFLAC/.libs/libFLAC.so.8.3.0 ../raspbian-armv7a/libFLAC.so
+        cp src/libFLAC/.libs/libFLAC.so.8.3.0 ../raspbian-armv7a/libFLAC-8.3.0.so
         cd ../raspbian-armv7a
-        patchelf --set-soname libFLAC.so libFLAC.so
+        patchelf --set-soname libFLAC-8.3.0.so libFLAC-8.3.0.so
     - name: Upload Raspbian armv7a library
       uses: actions/upload-artifact@v1
       with:
@@ -111,9 +111,9 @@ jobs:
         make
         ls -l src/libFLAC/.libs
         mkdir ../raspbian-armv6z
-        cp src/libFLAC/.libs/libFLAC.so.8.3.0 ../raspbian-armv6z/libFLAC.so
+        cp src/libFLAC/.libs/libFLAC.so.8.3.0 ../raspbian-armv6z/libFLAC-8.3.0.so
         cd ../raspbian-armv6z
-        patchelf --set-soname libFLAC.so libFLAC.so
+        patchelf --set-soname libFLAC-8.3.0.so libFLAC-8.3.0.so
     - name: Upload Raspbian armv6z library
       uses: actions/upload-artifact@v1
       with:
@@ -136,9 +136,9 @@ jobs:
         make
         mkdir ../darwin-x86_64
         ls -l src/libFLAC/.libs
-        cp src/libFLAC/.libs/libFLAC.8.dylib ../darwin-x86_64/libFLAC.dylib
+        cp src/libFLAC/.libs/libFLAC.8.dylib ../darwin-x86_64/
         cd ../darwin-x86_64
-        install_name_tool -id @rpath/libFLAC.dylib libFLAC.dylib
+        install_name_tool -id @rpath/libFLAC.8.dylib libFLAC.8.dylib
     - name: Upload macOS library
       uses: actions/upload-artifact@v1
       with:

@@ -16,6 +16,9 @@ from cffi import FFI
 
 # ------------------------------------------------------------------------------
 # Fix DLL load for Windows
+#
+# Since there is no rpath equivalent for Windows, we just explicitly load
+# the libFLAC DLL here.
 # ------------------------------------------------------------------------------
 if platform.system() == 'Windows':
     ffi = FFI()

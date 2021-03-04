@@ -11,42 +11,12 @@
 
 import cffi
 import os
-import platform
-import subprocess
+import sys
 
+# flake8: noqa: E402
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__))))
+from build_args import get_build_kwargs
 
-system = platform.system()
-if system == 'Darwin':
-    architecture = 'darwin-x86_64'
-elif system == 'Linux':
-    if os.uname()[4][:3] == 'arm':
-        cpuinfo = subprocess.check_output(['cat', '/proc/cpuinfo']).decode()
-        if 'neon' in cpuinfo:
-            architecture = 'raspbian-armv7a'
-        else:
-            architecture = 'raspbian-armv6z'
-    else:
-        architecture = 'linux-x86_64'
-elif system == 'Windows':
-    if platform.architecture()[0] == '32bit':
-        architecture = 'windows-i686'
-    else:
-        architecture = 'windows-x86_64'
-else:
-    raise RuntimeError('%s platform is not supported' % system)
-
-build_kwargs = {
-    'libraries': ['FLAC'],
-    'include_dirs': ['./pyflac/include'],
-    'library_dirs': ['./pyflac/libraries/' + architecture],
-    'extra_link_args': ['-Wl,-rpath,./pyflac/libraries/' + architecture]
-}
-
-if system == 'Windows':
-    builder_path = os.path.dirname(os.path.realpath(__file__))
-    base_path = os.path.abspath(os.path.join(builder_path, os.pardir))
-    build_kwargs['library_dirs'] = [os.path.join(base_path, 'libraries', architecture)]
-    del build_kwargs['extra_link_args']
 
 ffibuilder = cffi.FFI()
 ffibuilder.set_source(
@@ -55,7 +25,7 @@ ffibuilder.set_source(
     #include <FLAC/format.h>
     #include <FLAC/stream_decoder.h>
     """,
-    **build_kwargs
+    **get_build_kwargs()
 )
 
 # flake8: noqa: E501

@@ -7,7 +7,8 @@ pyFLAC
     :target: https://github.com/Sonos-Inc/pyFLAC/actions/workflows/test.yml
 .. image:: https://github.com/Sonos-Inc/pyFLAC/actions/workflows/build.yml/badge.svg
     :target: https://github.com/Sonos-Inc/pyFLAC/actions/workflows/build.yml
-
+.. image:: https://img.shields.io/pypi/pyversions/pysoundio
+    :target: https://pypi.org/project/pyFLAC
 
 A simple Pythonic interface for `libFLAC <https://xiph.org/flac>`_.
 
@@ -39,6 +40,8 @@ Examples
 Read a WAV file and pass the audio through the encoder/decoder for the purposes of illustration. ::
 
     python passthrough.py
+
+This example asserts that the uncompressed data is exactly equal to the original signal.
 
 
 Supported platforms

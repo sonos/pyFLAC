@@ -40,6 +40,31 @@ data directly from a file or process in real-time.
    :undoc-members:
    :inherited-members:
 
+State
+-----
+
+.. autoclass:: pyflac.EncoderState
+   :members:
+   :undoc-members:
+   :inherited-members:
+
+.. autoclass:: pyflac.DecoderState
+   :members:
+   :undoc-members:
+   :inherited-members:
+
+Exceptions
+----------
+
+.. autoclass:: pyflac.EncoderInitException
+
+.. autoclass:: pyflac.EncoderProcessException
+
+.. autoclass:: pyflac.DecoderInitException
+
+.. autoclass:: pyflac.DecoderProcessException
+
+
 Development
 ===========
 

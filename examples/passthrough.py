@@ -4,6 +4,10 @@
 #
 #  pyFLAC passthrough example
 #
+#  This example reads a WAV file, passes it through the FLAC encoder, and
+#  then back through through the FLAC decoder. It also asserts that the
+#  uncompressed output is exactly equal to the original signal.
+#
 #  Copyright (c) 2011-2021, Sonos, Inc.
 #  All rights reserved.
 #
@@ -17,18 +21,18 @@ import soundfile as sf
 import pyflac
 
 
-class Codec:
+class Passthrough:
 
     def __init__(self, args):
+        self.idx = 0
         self.total_bytes = 0
         self.queue = queue.SimpleQueue()
-        self.data, self.sr = sf.read(args.input_file, dtype='int16')
+        self.data, self.sr = sf.read(args.input_file, dtype='int16', always_2d=True)
 
         self.encoder = pyflac.StreamEncoder(
             write_callback=self.encoder_callback,
             sample_rate=self.sr,
             blocksize=args.block_size,
-            verify=args.verify
         )
 
         self.decoder = pyflac.StreamDecoder(
@@ -60,23 +64,27 @@ class Codec:
                                num_channels: int,
                                num_samples: int):
         assert self.sr == sample_rate
+        for sample in range(0, num_samples):
+            for chan in range(0, num_channels):
+                assert data[sample][chan] == self.data[self.idx][chan]
+            self.idx += 1
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description='pyFLAC encoder/decoder',
-        epilog='Convert WAV files to FLAC and vice versa'
+        description='pyFLAC passthrough example',
+        epilog='Pass a WAV file through the FLAC encoder/decoder and verify the output signal'
     )
-    parser.add_argument('input_file', help='Input WAV file to encode')
-    parser.add_argument('-o', '--output-file', help='Output file')
+    parser.add_argument('input_file', help='Input WAV file to passthrough')
     parser.add_argument('-c', '--compression-level', type=int, choices=range(0, 9),
                         help='0 is the fastest compression, 5 is the default, 8 is the highest compression')
     parser.add_argument('-b', '--block-size', type=int, default=0, help='The block size')
-    parser.add_argument('-v', '--verify', action='store_false', default=True, help='Verify the output')
     args = parser.parse_args()
 
-    codec = Codec(args)
-    codec.process()
+    flac = Passthrough(args)
+    flac.process()
+
+    print('Verified OK')
 
 
 if __name__ == '__main__':
