@@ -56,9 +56,12 @@ class _Decoder:
 
     def finish(self) -> bool:
         """
-        Finish the decoding process. Flushes the decoding buffer,
-        releases resources, resets the decoder settings to their defaults,
-        and returns the decoder state to `FLAC__STREAM_DECODER_UNINITIALIZED`.
+        Finish the decoding process.
+
+        Flushes the decoding buffer, releases resources, resets the decoder
+        settings to their defaults, and returns the decoder state to `FLAC__STREAM_DECODER_UNINITIALIZED`.
+
+        A well behaved program should always call this at the end.
         """
         return _lib.FLAC__stream_decoder_finish(self._decoder)
 
@@ -78,8 +81,28 @@ class _Decoder:
         """
         Instruct the decoder to process data until the read callback signifies
         the end of the stream.
+
+        Note: This will block until the end of the stream, i.e, the read callback
+        returns `None`, or if the read callback raises an exception.
+
+        Raises:
+            DecoderProcessException: if any fatal read, write, or memory allocation
+                error occurred (meaning decoding must stop)
         """
-        if not _lib.FLAC__stream_decoder_process_until_end_of_stream(self._decoder):
+        if (not _lib.FLAC__stream_decoder_process_until_end_of_stream(self._decoder)
+                or self.state == 'FLAC__STREAM_DECODER_ABORTED'):
+            raise DecoderProcessException(self.state)
+
+    def process_frame(self):
+        """
+        Instruct the decoder to process at most one metadata block or audio frame.
+        Unless the read callback raises an exception.
+
+        Raises:
+            DecoderProcessException: if any fatal read, write, or memory allocation
+                error occurred (meaning decoding must stop)
+        """
+        if not _lib.FLAC__stream_decoder_process_single(self._decoder):
             raise DecoderProcessException(self.state)
 
 
@@ -206,10 +229,10 @@ def _read_callback(decoder,
     decoder = _ffi.from_handle(client_data)
     if decoder._error:
         # ----------------------------------------------------------
-        # If an error has been issued via the error callback, raise
-        # it here to abort the processing of the stream.
+        # If an error has been issued via the error callback, then
+        # abort the processing of the stream.
         # ----------------------------------------------------------
-        raise DecoderProcessException(decoder._error)
+        return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
 
     maximum_bytes = int(num_bytes[0])
     if decoder.excess:

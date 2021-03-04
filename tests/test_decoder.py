@@ -71,7 +71,7 @@ class TestStreamDecoder(unittest.TestCase):
 
         with self.assertRaises(DecoderProcessException):
             self.decoder = StreamDecoder(
-                read_callback=self._read_too_much_callback,
+                read_callback=self._read_callback,
                 write_callback=self._write_callback
             )
             self.decoder.process()
@@ -86,7 +86,7 @@ class TestStreamDecoder(unittest.TestCase):
                 read_callback=self._read_callback_with_exception,
                 write_callback=self._write_callback
             )
-            self.decoder.process()
+            self.decoder.process_frame()
 
     def test_too_much_data(self):
         """ Test that passing too much data doesn't actually break anything """
@@ -158,13 +158,13 @@ class TestFileDecoder(unittest.TestCase):
         self.decoder.process()
         self.assertTrue(self.callback_called)
 
-    # def test_process_5_1_surround_file(self):
-    #     """ Test that a 5.1 surround FLAC file can be processed """
-    #     test_file = pathlib.Path(__file__).parent.absolute() / 'data/surround.flac'
-    #     self.default_kwargs['filename'] = str(test_file)
-    #     self.decoder = FileDecoder(**self.default_kwargs)
-    #     self.decoder.process()
-    #     self.assertTrue(self.callback_called)
+    def test_process_5_1_surround_file(self):
+        """ Test that a 5.1 surround FLAC file can be processed """
+        test_file = pathlib.Path(__file__).parent.absolute() / 'data/surround.flac'
+        self.default_kwargs['filename'] = str(test_file)
+        self.decoder = FileDecoder(**self.default_kwargs)
+        self.decoder.process()
+        self.assertTrue(self.callback_called)
 
 
 if __name__ == '__main__':
