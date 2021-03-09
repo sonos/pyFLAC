@@ -5,10 +5,10 @@ include CONTRIBUTING.rst
 include examples/*.py
 include tests/__init__.py
 include tests/data/*.wav
+include tests/data/*.flac
 include tests/test_encoder.py
 include tests/test_decoder.py
-include pyflac/builder/encoder.py
-include pyflac/builder/decoder.py
+include pyflac/builder/*.py
 include pyflac/include/FLAC/*.h
 include pyflac/libraries/LICENSE
 include pyflac/libraries/darwin-x86_64/*.dylib

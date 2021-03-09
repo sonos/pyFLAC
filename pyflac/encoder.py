@@ -121,6 +121,8 @@ class _Encoder:
         releases resources, resets the encoder settings to their defaults,
         and returns the encoder state to `EncoderState.UNINITIALIZED`.
 
+        A well behaved program should always call this at the end.
+
         Returns:
             (bool): `True` if successful, `False` otherwise.
         """

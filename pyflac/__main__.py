@@ -25,7 +25,8 @@ class Encoder:
             args.output_file,
             sample_rate=sr,
             blocksize=args.block_size,
-            verify=True
+            compression_level=args.compression_level,
+            verify=args.verify
         )
 
     def process(self):
@@ -61,7 +62,7 @@ def get_args():
     )
     parser.add_argument('input_file', help='Input WAV file to encode')
     parser.add_argument('-o', '--output-file', help='Output file')
-    parser.add_argument('-c', '--compression-level', type=int, choices=range(0, 9),
+    parser.add_argument('-c', '--compression-level', type=int, choices=range(0, 9), default=5,
                         help='0 is the fastest compression, 5 is the default, 8 is the highest compression')
     parser.add_argument('-b', '--block-size', type=int, default=0, help='The block size')
     parser.add_argument('-v', '--verify', action='store_false', default=True, help='Verify the compressed data')
