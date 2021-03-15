@@ -11,7 +11,7 @@
 
 from setuptools import setup, find_packages
 
-__version__ = '1.0.0'
+__version__ = '0.1.0'
 
 setup(
     name='pyFLAC',
@@ -21,7 +21,7 @@ setup(
     author='Sonos, Inc',
     author_email='joe.todd@sonos.com',
     url='http://pyflac.readthedocs.io/en/latest/',
-    download_url='https://github.com/Sonos-Inc/pyFLAC/archive/' + __version__ + '.tar.gz',
+    download_url='https://github.com/sonos/pyFLAC/archive/' + __version__ + '.tar.gz',
     packages=find_packages(),
     include_package_data=True,
     setup_requires=['cffi>=1.4.0'],

@@ -11,9 +11,11 @@
 
 from enum import Enum
 import logging
+import tempfile
 from typing import Callable
 
 import numpy as np
+import soundfile as sf
 
 from pyflac._encoder import ffi as _ffi
 from pyflac._encoder import lib as _lib
@@ -289,11 +291,13 @@ class StreamEncoder(_Encoder):
 
 class FileEncoder(_Encoder):
     """
-    The pyFLAC file encoder writes the encoded audio data directly to a file.
+    The pyFLAC file encoder reads the raw audio data from the WAV file and
+    writes the encoded audio data to a FLAC file.
 
     Args:
-        filename (str): Path to the output FLAC file
-        sample_rate (int): The raw audio sample rate (Hz)
+        input_filename (str): Path to the input WAV file
+        output_filename (str): Path to the output FLAC file, a temporary
+            file will be created if unspecified.
         compression_level (int): The compression level parameter that
             varies from 0 (fastest) to 8 (slowest). The default setting
             is 5, see https://en.wikipedia.org/wiki/FLAC for more details.
@@ -311,13 +315,19 @@ class FileEncoder(_Encoder):
         ValueError: If any invalid values are passed in to the constructor.
     """
     def __init__(self,
-                 filename: str,
-                 sample_rate: int,
+                 input_filename: str,
+                 output_filename: str = None,
                  compression_level: int = 5,
                  blocksize: int = 0,
                  verify: bool = False):
         super().__init__()
-        self.__filename = filename
+
+        self.__raw_audio, sample_rate = sf.read(input_filename, dtype='int16')
+        if output_filename:
+            self.__output_filename = output_filename
+        else:
+            output_file = tempfile.NamedTemporaryFile(suffix='.flac')
+            self.__output_filename = output_file.name
 
         self._sample_rate = sample_rate
         self._blocksize = blocksize
@@ -331,18 +341,33 @@ class FileEncoder(_Encoder):
         Raises:
             EncoderInitException: if initialisation fails.
         """
-        c_filename = _ffi.new('char[]', self.__filename.encode('utf-8'))
+        c_output_filename = _ffi.new('char[]', self.__output_filename.encode('utf-8'))
         rc = _lib.FLAC__stream_encoder_init_file(
             self._encoder,
-            c_filename,
+            c_output_filename,
             _lib._progress_callback,
             self._encoder_handle,
         )
-        _ffi.release(c_filename)
+        _ffi.release(c_output_filename)
         if rc != _lib.FLAC__STREAM_ENCODER_INIT_STATUS_OK:
             raise EncoderInitException(rc)
 
         self._initialised = True
+
+    def process(self) -> bytes:
+        """
+        Process the audio data from the WAV file.
+
+        Returns:
+            (bytes): The FLAC encoded bytes.
+
+        Raises:
+            EncoderProcessException: if an error occurs when processing the samples
+        """
+        super().process(self.__raw_audio)
+        self.finish()
+        with open(self.__output_filename, 'rb') as f:
+            return f.read()
 
 
 @_ffi.def_extern(error=_lib.FLAC__STREAM_ENCODER_WRITE_STATUS_FATAL_ERROR)

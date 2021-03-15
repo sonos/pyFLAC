@@ -11,6 +11,7 @@
 
 import os
 import pathlib
+import tempfile
 import unittest
 
 from pyflac.decoder import _Decoder
@@ -138,47 +139,36 @@ class TestFileDecoder(unittest.TestCase):
     def setUp(self):
         self.decoder = None
         self.callback_called = False
-        self.default_kwargs = {
-            'filename': None,
-            'write_callback': self._write_callback
-        }
-
-    def tearDown(self):
-        if self.decoder:
-            self.decoder.finish()
-
-    def _write_callback(self, data, rate, channels, blocksize):
-        self.callback_called = True
+        self.temp_file = tempfile.NamedTemporaryFile(suffix='.wav')
+        self.default_kwargs = {'input_filename': None}
 
     def test_process_invalid_file(self):
         """ Test that an invalid file raises an error """
-        self.default_kwargs['filename'] = 'invalid.flac'
+        self.default_kwargs['input_filename'] = 'invalid.flac'
         with self.assertRaises(DecoderInitException):
             self.decoder = FileDecoder(**self.default_kwargs)
 
     def test_process_mono_file(self):
         """ Test that a mono FLAC file can be processed """
         test_file = pathlib.Path(__file__).parent.absolute() / 'data/mono.flac'
-        self.default_kwargs['filename'] = str(test_file)
+        self.default_kwargs['input_filename'] = str(test_file)
         self.decoder = FileDecoder(**self.default_kwargs)
-        self.decoder.process()
-        self.assertTrue(self.callback_called)
+        self.assertIsNotNone(self.decoder.process())
 
     def test_process_stereo_file(self):
         """ Test that a stereo FLAC file can be processed """
         test_file = pathlib.Path(__file__).parent.absolute() / 'data/stereo.flac'
-        self.default_kwargs['filename'] = str(test_file)
+        self.default_kwargs['input_filename'] = str(test_file)
         self.decoder = FileDecoder(**self.default_kwargs)
-        self.decoder.process()
-        self.assertTrue(self.callback_called)
+        self.assertIsNotNone(self.decoder.process())
 
     def test_process_5_1_surround_file(self):
         """ Test that a 5.1 surround FLAC file can be processed """
         test_file = pathlib.Path(__file__).parent.absolute() / 'data/surround.flac'
-        self.default_kwargs['filename'] = str(test_file)
+        self.default_kwargs['input_filename'] = str(test_file)
+        self.default_kwargs['output_filename'] = self.temp_file.name
         self.decoder = FileDecoder(**self.default_kwargs)
-        self.decoder.process()
-        self.assertTrue(self.callback_called)
+        self.assertIsNotNone(self.decoder.process())
 
 
 if __name__ == '__main__':

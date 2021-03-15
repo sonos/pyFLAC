@@ -145,31 +145,18 @@ class TestFileEncoder(unittest.TestCase):
     """
     def setUp(self):
         self.encoder = None
-        self.file = tempfile.NamedTemporaryFile(suffix='.flac')
+        self.test_file = pathlib.Path(__file__).parent.absolute() / 'data/mono.wav'
+        self.temp_file = tempfile.NamedTemporaryFile(suffix='.flac')
         self.default_kwargs = {
-            'filename': self.file.name,
-            'sample_rate': DEFAULT_SAMPLE_RATE,
+            'input_filename': str(self.test_file),
             'blocksize': DEFAULT_BLOCKSIZE,
             'verify': True
         }
 
-    def tearDown(self):
-        if self.encoder:
-            self.encoder.finish()
-
-    def test_invalid_sample_rate(self):
-        """ Test than an exception is raised if given an invalid sample rate """
-        self.encoder = FileEncoder(filename=self.file.name, sample_rate=1000000)
-        with self.assertRaises(EncoderInitException):
-            self.encoder._init()
-
     def test_invalid_blocksize(self):
         """ Test than an exception is raised if given an invalid block size """
-        self.encoder = FileEncoder(
-            filename=self.file.name,
-            sample_rate=DEFAULT_SAMPLE_RATE,
-            blocksize=1000000,
-        )
+        self.default_kwargs['blocksize'] = 1000000
+        self.encoder = FileEncoder(**self.default_kwargs)
         with self.assertRaises(EncoderInitException):
             self.encoder._init()
 
@@ -177,33 +164,28 @@ class TestFileEncoder(unittest.TestCase):
         """ Test that the initial state is ok """
         self.encoder = FileEncoder(**self.default_kwargs)
         self.assertEqual(self.encoder.state, EncoderState.UNINITIALIZED)
-        test_samples = np.random.rand(DEFAULT_BLOCKSIZE, DEFAULT_CHANNELS).astype('int16')
-        self.encoder.process(test_samples)
-        self.assertEqual(self.encoder.state, EncoderState.OK)
 
     def test_process_mono_file(self):
         """ Test that a mono WAV file can be processed """
         test_path = pathlib.Path(__file__).parent.absolute() / 'data/mono.wav'
-        test_samples, sr = sf.read(test_path, dtype='int16')
-        self.default_kwargs['sample_rate'] = sr
+        self.default_kwargs['input_filename'] = test_path
+        self.default_kwargs['output_filename'] = self.temp_file.name
         self.encoder = FileEncoder(**self.default_kwargs)
-        self.encoder.process(test_samples[:DEFAULT_BLOCKSIZE])
+        self.encoder.process()
 
     def test_process_stereo_file(self):
         """ Test that a stereo WAV file can be processed """
         test_path = pathlib.Path(__file__).parent.absolute() / 'data/stereo.wav'
-        test_samples, sr = sf.read(test_path, dtype='int16')
-        self.default_kwargs['sample_rate'] = sr
+        self.default_kwargs['input_filename'] = test_path
         self.encoder = FileEncoder(**self.default_kwargs)
-        self.encoder.process(test_samples)
+        self.encoder.process()
 
     def test_process_5_1_surround_file(self):
         """ Test that a 5.1 surround WAV file can be processed """
         test_path = pathlib.Path(__file__).parent.absolute() / 'data/surround.wav'
-        test_samples, sr = sf.read(test_path, dtype='int16')
-        self.default_kwargs['sample_rate'] = sr
+        self.default_kwargs['input_filename'] = test_path
         self.encoder = FileEncoder(**self.default_kwargs)
-        self.encoder.process(test_samples)
+        self.encoder.process()
 
 
 if __name__ == '__main__':

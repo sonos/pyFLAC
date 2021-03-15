@@ -11,9 +11,12 @@
 
 from enum import Enum
 import logging
-from typing import Callable
+import tempfile
+import time
+from typing import Callable, Tuple
 
 import numpy as np
+import soundfile as sf
 
 from pyflac._decoder import ffi as _ffi
 from pyflac._decoder import lib as _lib
@@ -210,35 +213,73 @@ class StreamDecoder(_Decoder):
 
 class FileDecoder(_Decoder):
     """
-    The pyFLAC file decoder writes the decoded audio data directly to a file.
+    The pyFLAC file decoder reads the encoded audio data directly from a FLAC
+    file and writes to a WAV file.
 
     Args:
-        filename (str): Path to the output FLAC file
-        write_callback (fn): Function to call when there is uncompressed
-            audio data ready, see the example below for more information.
+        input_filename (str): Path to the input FLAC file
+        output_filename (str): Path to the output WAV file, a temporary
+            file will be created if unspecified.
 
     Raises:
         DecoderInitException: If initialisation of the decoder fails
     """
     def __init__(self,
-                 filename: str,
-                 write_callback: Callable[[np.ndarray, int, int, int], None]):
+                 input_filename: str,
+                 output_filename: str = None):
         super().__init__()
 
-        self.write_callback = write_callback
+        self.__output = None
+        self.write_callback = self._write_callback
+        if output_filename:
+            self.__output_filename = output_filename
+        else:
+            output_file = tempfile.NamedTemporaryFile(suffix='.wav')
+            self.__output_filename = output_file.name
 
-        c_filename = _ffi.new('char[]', filename.encode('utf-8'))
+        c_input_filename = _ffi.new('char[]', input_filename.encode('utf-8'))
         rc = _lib.FLAC__stream_decoder_init_file(
             self._decoder,
-            c_filename,
+            c_input_filename,
             _lib._write_callback,
             _ffi.NULL,
             _lib._error_callback,
             self._decoder_handle,
         )
-        _ffi.release(c_filename)
+        _ffi.release(c_input_filename)
         if rc != _lib.FLAC__STREAM_DECODER_INIT_STATUS_OK:
             raise DecoderInitException(rc)
+
+    def process(self) -> Tuple[np.ndarray, int]:
+        """
+        Process the audio data from the FLAC file.
+
+        Returns:
+            (tuple): A tuple of the decoded numpy audio array, and the sample rate of the audio data.
+
+        Raises:
+            DecoderProcessException: if any fatal read, write, or memory allocation
+                error occurred (meaning decoding must stop)
+        """
+        super().process()
+        while self.state != DecoderState.END_OF_STREAM:
+            time.sleep(0.1)
+        self.finish()
+
+        if self.__output:
+            self.__output.close()
+            return sf.read(self.__output_filename, always_2d=True)
+
+    def _write_callback(self, data: np.ndarray, sample_rate: int, num_channels: int, num_samples: int):
+        """
+        Internal callback to write the decoded data to a WAV file.
+        """
+        if self.__output is None:
+            self.__output = sf.SoundFile(
+                self.__output_filename, mode='w', channels=num_channels,
+                samplerate=sample_rate
+            )
+        self.__output.write(data)
 
 
 @_ffi.def_extern(error=_lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT)

@@ -17,7 +17,6 @@ data directly to a file or process in real-time.
 .. autoclass:: pyflac.FileEncoder
    :members:
    :undoc-members:
-   :inherited-members:
 
 .. autoclass:: pyflac.StreamEncoder
    :members:
@@ -33,7 +32,6 @@ data directly from a file or process in real-time.
 .. autoclass:: pyflac.FileDecoder
    :members:
    :undoc-members:
-   :inherited-members:
 
 .. autoclass:: pyflac.StreamDecoder
    :members:
