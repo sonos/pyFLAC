@@ -148,7 +148,7 @@ class TestFileEncoder(unittest.TestCase):
         self.test_file = pathlib.Path(__file__).parent.absolute() / 'data/mono.wav'
         self.temp_file = tempfile.NamedTemporaryFile(suffix='.flac')
         self.default_kwargs = {
-            'input_filename': str(self.test_file),
+            'input_file': self.test_file,
             'blocksize': DEFAULT_BLOCKSIZE,
             'verify': True
         }
@@ -168,22 +168,22 @@ class TestFileEncoder(unittest.TestCase):
     def test_process_mono_file(self):
         """ Test that a mono WAV file can be processed """
         test_path = pathlib.Path(__file__).parent.absolute() / 'data/mono.wav'
-        self.default_kwargs['input_filename'] = test_path
-        self.default_kwargs['output_filename'] = self.temp_file.name
+        self.default_kwargs['input_file'] = test_path
+        self.default_kwargs['output_file'] = pathlib.Path(self.temp_file.name)
         self.encoder = FileEncoder(**self.default_kwargs)
         self.encoder.process()
 
     def test_process_stereo_file(self):
         """ Test that a stereo WAV file can be processed """
         test_path = pathlib.Path(__file__).parent.absolute() / 'data/stereo.wav'
-        self.default_kwargs['input_filename'] = test_path
+        self.default_kwargs['input_file'] = test_path
         self.encoder = FileEncoder(**self.default_kwargs)
         self.encoder.process()
 
     def test_process_5_1_surround_file(self):
         """ Test that a 5.1 surround WAV file can be processed """
         test_path = pathlib.Path(__file__).parent.absolute() / 'data/surround.wav'
-        self.default_kwargs['input_filename'] = test_path
+        self.default_kwargs['input_file'] = test_path
         self.encoder = FileEncoder(**self.default_kwargs)
         self.encoder.process()
 

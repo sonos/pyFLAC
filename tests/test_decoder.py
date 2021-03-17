@@ -140,33 +140,33 @@ class TestFileDecoder(unittest.TestCase):
         self.decoder = None
         self.callback_called = False
         self.temp_file = tempfile.NamedTemporaryFile(suffix='.wav')
-        self.default_kwargs = {'input_filename': None}
+        self.default_kwargs = {'input_file': None}
 
     def test_process_invalid_file(self):
         """ Test that an invalid file raises an error """
-        self.default_kwargs['input_filename'] = 'invalid.flac'
+        self.default_kwargs['input_file'] = pathlib.Path('invalid.flac')
         with self.assertRaises(DecoderInitException):
             self.decoder = FileDecoder(**self.default_kwargs)
 
     def test_process_mono_file(self):
         """ Test that a mono FLAC file can be processed """
-        test_file = pathlib.Path(__file__).parent.absolute() / 'data/mono.flac'
-        self.default_kwargs['input_filename'] = str(test_file)
+        test_file = pathlib.Path(__file__).parent / 'data/mono.flac'
+        self.default_kwargs['input_file'] = test_file
         self.decoder = FileDecoder(**self.default_kwargs)
         self.assertIsNotNone(self.decoder.process())
 
     def test_process_stereo_file(self):
         """ Test that a stereo FLAC file can be processed """
-        test_file = pathlib.Path(__file__).parent.absolute() / 'data/stereo.flac'
-        self.default_kwargs['input_filename'] = str(test_file)
+        test_file = pathlib.Path(__file__).parent / 'data/stereo.flac'
+        self.default_kwargs['input_file'] = test_file
         self.decoder = FileDecoder(**self.default_kwargs)
         self.assertIsNotNone(self.decoder.process())
 
     def test_process_5_1_surround_file(self):
         """ Test that a 5.1 surround FLAC file can be processed """
-        test_file = pathlib.Path(__file__).parent.absolute() / 'data/surround.flac'
-        self.default_kwargs['input_filename'] = str(test_file)
-        self.default_kwargs['output_filename'] = self.temp_file.name
+        test_file = pathlib.Path(__file__).parent / 'data/surround.flac'
+        self.default_kwargs['input_file'] = test_file
+        self.default_kwargs['output_file'] = pathlib.Path(self.temp_file.name)
         self.decoder = FileDecoder(**self.default_kwargs)
         self.assertIsNotNone(self.decoder.process())
 

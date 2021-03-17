@@ -11,6 +11,7 @@
 
 from enum import Enum
 import logging
+from pathlib import Path
 import tempfile
 from typing import Callable
 
@@ -295,8 +296,8 @@ class FileEncoder(_Encoder):
     writes the encoded audio data to a FLAC file.
 
     Args:
-        input_filename (str): Path to the input WAV file
-        output_filename (str): Path to the output FLAC file, a temporary
+        input_file (pathlib.Path): Path to the input WAV file
+        output_file (pathlib.Path): Path to the output FLAC file, a temporary
             file will be created if unspecified.
         compression_level (int): The compression level parameter that
             varies from 0 (fastest) to 8 (slowest). The default setting
@@ -315,19 +316,19 @@ class FileEncoder(_Encoder):
         ValueError: If any invalid values are passed in to the constructor.
     """
     def __init__(self,
-                 input_filename: str,
-                 output_filename: str = None,
+                 input_file: Path,
+                 output_file: Path = None,
                  compression_level: int = 5,
                  blocksize: int = 0,
                  verify: bool = False):
         super().__init__()
 
-        self.__raw_audio, sample_rate = sf.read(input_filename, dtype='int16')
-        if output_filename:
-            self.__output_filename = output_filename
+        self.__raw_audio, sample_rate = sf.read(str(input_file), dtype='int16')
+        if output_file:
+            self.__output_file = output_file
         else:
             output_file = tempfile.NamedTemporaryFile(suffix='.flac')
-            self.__output_filename = output_file.name
+            self.__output_file = Path(output_file.name)
 
         self._sample_rate = sample_rate
         self._blocksize = blocksize
@@ -341,7 +342,7 @@ class FileEncoder(_Encoder):
         Raises:
             EncoderInitException: if initialisation fails.
         """
-        c_output_filename = _ffi.new('char[]', self.__output_filename.encode('utf-8'))
+        c_output_filename = _ffi.new('char[]', str(self.__output_file).encode('utf-8'))
         rc = _lib.FLAC__stream_encoder_init_file(
             self._encoder,
             c_output_filename,
@@ -366,7 +367,7 @@ class FileEncoder(_Encoder):
         """
         super().process(self.__raw_audio)
         self.finish()
-        with open(self.__output_filename, 'rb') as f:
+        with open(self.__output_file, 'rb') as f:
             return f.read()
 
 

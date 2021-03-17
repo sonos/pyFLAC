@@ -14,6 +14,7 @@
 # ------------------------------------------------------------------------------
 
 import argparse
+from pathlib import Path
 import queue
 
 import numpy as np
@@ -75,7 +76,7 @@ def main():
         description='pyFLAC passthrough example',
         epilog='Pass a WAV file through the FLAC encoder/decoder and verify the output signal'
     )
-    parser.add_argument('input_file', help='Input WAV file to passthrough')
+    parser.add_argument('input_file', type=Path, help='Input WAV file to passthrough')
     parser.add_argument('-c', '--compression-level', type=int, choices=range(0, 9), default=5,
                         help='0 is the fastest compression, 5 is the default, 8 is the highest compression')
     parser.add_argument('-b', '--block-size', type=int, default=0, help='The block size')

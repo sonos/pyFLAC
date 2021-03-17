@@ -11,6 +11,7 @@
 
 from enum import Enum
 import logging
+from pathlib import Path
 import tempfile
 import time
 from typing import Callable, Tuple
@@ -217,27 +218,27 @@ class FileDecoder(_Decoder):
     file and writes to a WAV file.
 
     Args:
-        input_filename (str): Path to the input FLAC file
-        output_filename (str): Path to the output WAV file, a temporary
+        input_file (pathlib.Path): Path to the input FLAC file
+        output_file (pathlib.Path): Path to the output WAV file, a temporary
             file will be created if unspecified.
 
     Raises:
         DecoderInitException: If initialisation of the decoder fails
     """
     def __init__(self,
-                 input_filename: str,
-                 output_filename: str = None):
+                 input_file: Path,
+                 output_file: Path = None):
         super().__init__()
 
         self.__output = None
         self.write_callback = self._write_callback
-        if output_filename:
-            self.__output_filename = output_filename
+        if output_file:
+            self.__output_file = output_file
         else:
             output_file = tempfile.NamedTemporaryFile(suffix='.wav')
-            self.__output_filename = output_file.name
+            self.__output_file = Path(output_file.name)
 
-        c_input_filename = _ffi.new('char[]', input_filename.encode('utf-8'))
+        c_input_filename = _ffi.new('char[]', str(input_file).encode('utf-8'))
         rc = _lib.FLAC__stream_decoder_init_file(
             self._decoder,
             c_input_filename,
@@ -268,7 +269,7 @@ class FileDecoder(_Decoder):
 
         if self.__output:
             self.__output.close()
-            return sf.read(self.__output_filename, always_2d=True)
+            return sf.read(str(self.__output_file), always_2d=True)
 
     def _write_callback(self, data: np.ndarray, sample_rate: int, num_channels: int, num_samples: int):
         """
@@ -276,7 +277,7 @@ class FileDecoder(_Decoder):
         """
         if self.__output is None:
             self.__output = sf.SoundFile(
-                self.__output_filename, mode='w', channels=num_channels,
+                self.__output_file, mode='w', channels=num_channels,
                 samplerate=sample_rate
             )
         self.__output.write(data)

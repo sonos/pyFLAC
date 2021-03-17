@@ -11,6 +11,7 @@
 # ------------------------------------------------------------------------------
 
 import argparse
+from pathlib import Path
 import os
 
 from pyflac import FileEncoder, FileDecoder
@@ -21,8 +22,8 @@ def get_args():
         description='pyFLAC encoder/decoder',
         epilog='Convert WAV files to FLAC and vice versa'
     )
-    parser.add_argument('input_file', help='Input file to encode/decode')
-    parser.add_argument('-o', '--output-file', help='Output file')
+    parser.add_argument('input_file', type=Path, help='Input file to encode/decode')
+    parser.add_argument('-o', '--output-file', type=Path, help='Output file')
     parser.add_argument('-c', '--compression-level', type=int, choices=range(0, 9), default=5,
                         help='0 is the fastest compression, 5 is the default, 8 is the highest compression')
     parser.add_argument('-b', '--block-size', type=int, default=0, help='The block size')
@@ -37,8 +38,8 @@ def main():
     if extension == '.wav':
         args.output_file = f'{filename}.flac' if args.output_file is None else args.output_file
         encoder = FileEncoder(
-            input_filename=args.input_file,
-            output_filename=args.output_file,
+            input_file=args.input_file,
+            output_file=args.output_file,
             blocksize=args.block_size,
             compression_level=args.compression_level,
             verify=args.verify
