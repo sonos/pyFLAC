@@ -148,6 +148,14 @@ class TestFileDecoder(unittest.TestCase):
         with self.assertRaises(DecoderInitException):
             self.decoder = FileDecoder(**self.default_kwargs)
 
+    def test_process_8bit_file(self):
+        """ Test that an 8bit file raises an error """
+        test_file = pathlib.Path(__file__).parent / 'data/8bit.flac'
+        self.default_kwargs['input_file'] = test_file
+        with self.assertRaises(DecoderProcessException):
+            self.decoder = FileDecoder(**self.default_kwargs)
+            self.decoder.process()
+
     def test_process_mono_file(self):
         """ Test that a mono FLAC file can be processed """
         test_file = pathlib.Path(__file__).parent / 'data/mono.flac'
