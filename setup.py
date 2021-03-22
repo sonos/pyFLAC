@@ -11,15 +11,17 @@
 
 from setuptools import setup, find_packages
 
-__version__ = '0.1.0'
+__version__ = '1.0.0-beta.1'
 
 setup(
     name='pyFLAC',
     version=__version__,
     description='A Python wrapper for libFLAC',
     long_description=open('README.rst').read(),
+    long_description_content_type='text/x-rst',
     author='Sonos, Inc',
     author_email='joe.todd@sonos.com',
+    license='Apache License 2.0',
     url='http://pyflac.readthedocs.io/en/latest/',
     download_url='https://github.com/sonos/pyFLAC/archive/' + __version__ + '.tar.gz',
     packages=find_packages(),
@@ -32,7 +34,7 @@ setup(
     install_requires=[
         'cffi>=1.4.0',
         'numpy==1.19.5',
-        'SoundFile==0.10.2',
+        'SoundFile>=0.10.0',
     ],
     test_suite='tests',
     python_requires='>=3.6',
@@ -45,7 +47,7 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
-        'OSI Approved :: Apache Software License',
+        'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',

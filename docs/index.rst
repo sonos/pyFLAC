@@ -4,6 +4,28 @@
 
 .. only:: html
 
+Examples
+--------
+
+:download:`passthrough.py <../examples/passthrough.py>`
+
+Read a WAV file and pass the audio through the encoder/decoder for the purposes of illustration. ::
+
+      python passthrough.py
+
+This example asserts that the uncompressed data is exactly equal to the original signal.
+
+:download:`stream.py <../examples/stream.py>`
+
+Stream audio from the microphone input and pass through the encoder printing the effectiveness
+of the compression to the terminal. ::
+
+      python stream.py
+
+.. note::
+      This example requires `sounddevice`, which can be installed with pip.
+      See the `sounddevice <https://python-sounddevice.readthedocs.io/>`_ documentation for more information.
+
 
 API Reference
 =============

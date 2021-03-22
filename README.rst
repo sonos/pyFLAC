@@ -32,18 +32,6 @@ You can use pip to download and install the latest release with a single command
     See the `SoundFile <https://pysoundfile.readthedocs.io/en/latest/#installation>`_ documentation for more information.
 
 
-Examples
---------
-
-:download:`passthrough.py <../examples/passthrough.py>`
-
-Read a WAV file and pass the audio through the encoder/decoder for the purposes of illustration. ::
-
-    python passthrough.py
-
-This example asserts that the uncompressed data is exactly equal to the original signal.
-
-
 Supported platforms
 -------------------
 
