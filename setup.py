@@ -9,9 +9,17 @@
 #
 # ------------------------------------------------------------------------------
 
+import os
+import re
 from setuptools import setup, find_packages
 
-__version__ = '1.0.0-beta.2'
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+vstr = read('pyflac/__init__.py')
+regex = r"^__version__ = ['\"]([^'\"]*)['\"]"
+version = re.search(regex, vstr, re.M)
+__version__ = version.group(1)
 
 setup(
     name='pyFLAC',

@@ -65,9 +65,7 @@ class ProcessingThread(threading.Thread):
     def run(self):
         while self.running:
             while not self.queue.empty():
-                data = self.queue.get(block=False)
-                self.encoder.process(data)
-            time.sleep(0.1)
+                self.encoder.process(self.queue.get())
 
         self.encoder.finish()
         if self.output_file:
@@ -81,6 +79,7 @@ class AudioStream:
         self.stream = sd.InputStream(
             dtype='int16',
             channels=1,
+            blocksize=args.block_size,
             callback=self.audio_callback
         )
         self.thread = ProcessingThread(args, self.stream)
@@ -105,7 +104,7 @@ def main():
     parser.add_argument('-o', '--output-file', type=Path, help='Optionally save to output FLAC file')
     parser.add_argument('-c', '--compression-level', type=int, choices=range(0, 9), default=5,
                         help='0 is the fastest compression, 5 is the default, 8 is the highest compression')
-    parser.add_argument('-b', '--block-size', type=int, default=8192, help='The block size')
+    parser.add_argument('-b', '--block-size', type=int, default=0, help='The block size')
     args = parser.parse_args()
 
     try:
