@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # ------------------------------------------------------------------------------
@@ -14,21 +15,31 @@
 #
 # ------------------------------------------------------------------------------
 
+import argparse
+from pathlib import Path
 import queue
 import threading
 import time
 
 import pyflac
 import sounddevice as sd
+import soundfile as sf
 
 
 class ProcessingThread(threading.Thread):
 
-    def __init__(self, sample_rate):
+    def __init__(self, args, stream):
         super().__init__()
+        self.output_file = None
         self.queue = queue.SimpleQueue()
+        self.sample_size = stream.samplesize
+
         self.encoder = pyflac.StreamEncoder(write_callback=self.encoder_callback,
-                                            sample_rate=sample_rate)
+                                            sample_rate=int(stream.samplerate),
+                                            compression_level=args.compression_level)
+
+        if args.output_file:
+            self.output_file = open(args.output_file, 'wb')
 
     def start(self):
         self.running = True
@@ -42,10 +53,14 @@ class ProcessingThread(threading.Thread):
             print('FLAC header')
         else:
             print('Encoded {actual_bytes} bytes in {num_bytes} bytes: {ratio:.2f}%'.format(
-                actual_bytes=num_samples * 2,
+                actual_bytes=num_samples * self.sample_size,
                 num_bytes=num_bytes,
-                ratio=num_bytes / (num_samples * 2) * 100
+                ratio=num_bytes / (num_samples * self.sample_size) * 100
             ))
+
+        if self.output_file:
+            self.output_file.write(buffer)
+            self.output_file.flush()
 
     def run(self):
         while self.running:
@@ -53,14 +68,22 @@ class ProcessingThread(threading.Thread):
                 data = self.queue.get(block=False)
                 self.encoder.process(data)
             time.sleep(0.1)
+
         self.encoder.finish()
+        if self.output_file:
+            print(f'Wrote output to {self.output_file.name}')
+            self.output_file.close()
 
 
-class Stream:
+class AudioStream:
 
-    def __init__(self):
-        self.stream =  sd.InputStream(dtype='int16', callback=self.audio_callback)
-        self.thread = ProcessingThread(int(self.stream.samplerate))
+    def __init__(self, args):
+        self.stream = sd.InputStream(
+            dtype='int16',
+            channels=1,
+            callback=self.audio_callback
+        )
+        self.thread = ProcessingThread(args, self.stream)
 
     def start(self):
         self.thread.start()
@@ -74,10 +97,25 @@ class Stream:
         self.thread.queue.put(indata)
 
 
-try:
-    stream = Stream()
-    stream.start()
-    while True:
-        time.sleep(0.1)
-except KeyboardInterrupt:
-    stream.stop()
+def main():
+    parser = argparse.ArgumentParser(
+        description='pyFLAC audio stream example',
+        epilog='Stream audio data from the microphone and pass it through the pyFLAC encoder'
+    )
+    parser.add_argument('-o', '--output-file', type=Path, help='Optionally save to output FLAC file')
+    parser.add_argument('-c', '--compression-level', type=int, choices=range(0, 9), default=5,
+                        help='0 is the fastest compression, 5 is the default, 8 is the highest compression')
+    parser.add_argument('-b', '--block-size', type=int, default=8192, help='The block size')
+    args = parser.parse_args()
+
+    try:
+        stream = AudioStream(args)
+        stream.start()
+        while True:
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        stream.stop()
+
+
+if __name__ == '__main__':
+    main()

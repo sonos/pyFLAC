@@ -11,7 +11,7 @@
 
 from setuptools import setup, find_packages
 
-__version__ = '1.0.0-beta.1'
+__version__ = '1.0.0-beta.2'
 
 setup(
     name='pyFLAC',
@@ -33,8 +33,9 @@ setup(
     ],
     install_requires=[
         'cffi>=1.4.0',
-        'numpy==1.19.5',
-        'SoundFile>=0.10.0',
+        'numpy; python_version >= "3.7.0"',
+        'numpy<=1.19.5; python_version < "3.7.0"',
+        'SoundFile>=0.8.0',
     ],
     test_suite='tests',
     python_requires='>=3.6',

@@ -9,6 +9,19 @@
 #
 # ------------------------------------------------------------------------------
 
+__all__ = [
+    'StreamEncoder',
+    'FileEncoder',
+    'EncoderState',
+    'EncoderInitException',
+    'EncoderProcessException',
+    'StreamDecoder',
+    'FileDecoder',
+    'DecoderState',
+    'DecoderInitException',
+    'DecoderProcessException'
+]
+
 import os
 import platform
 

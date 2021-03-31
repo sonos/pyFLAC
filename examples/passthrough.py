@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # ------------------------------------------------------------------------------
@@ -65,10 +66,8 @@ class Passthrough:
                                num_channels: int,
                                num_samples: int):
         assert self.sr == sample_rate
-        for sample in range(0, num_samples):
-            for chan in range(0, num_channels):
-                assert data[sample][chan] == self.data[self.idx][chan]
-            self.idx += 1
+        assert np.array_equal(data, self.data[self.idx:self.idx + num_samples])
+        self.idx += num_samples
 
 
 def main():
@@ -86,6 +85,9 @@ def main():
     flac.process()
 
     print('Verified OK')
+    print('Compression ratio = {ratio:.2f}%'.format(
+        ratio=flac.total_bytes / flac.data.nbytes * 100
+    ))
 
 
 if __name__ == '__main__':

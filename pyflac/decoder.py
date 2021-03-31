@@ -373,9 +373,13 @@ def _write_callback(decoder,
 
     If an exception is raised here, the abort status is returned.
     """
+    channels = []
     decoder = _ffi.from_handle(client_data)
 
-    channels = []
+    # --------------------------------------------------------------
+    # Data comes from libFLAC in a 32bit array, where the 16bit
+    # audio data sits in the least significant bits.
+    # --------------------------------------------------------------
     bytes_per_frame = frame.header.blocksize * np.dtype(np.int32).itemsize
 
     if frame.header.bits_per_sample != 16:
@@ -421,5 +425,5 @@ def _error_callback(decoder,
     decoder = _ffi.from_handle(client_data)
     message = _ffi.string(
         _lib.FLAC__StreamDecoderErrorStatusString[status]).decode()
-    decoder.logger.error(f'decoder error: {message}')
+    decoder.logger.error(f'Error in libFLAC decoder: {message}')
     decoder._error = message

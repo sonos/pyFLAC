@@ -228,7 +228,7 @@ class StreamEncoder(_Encoder):
         blocksize (int): The size of the block to be returned in the
             callback. The default is 0 which allows libFLAC to determine
             the best block size.
-        verify (bool): If `True`, the encoder will verify it's own
+        verify (bool): If `True`, the encoder will verify its own
             encoded output by feeding it through an internal decoder and
             comparing the original signal against the decoded signal.
             If a mismatch occurs, the `process` method will raise a
@@ -305,7 +305,7 @@ class FileEncoder(_Encoder):
         blocksize (int): The size of the block to be returned in the
             callback. The default is 0 which allows libFLAC to determine
             the best block size.
-        verify (bool): If `True`, the encoder will verify it's own
+        verify (bool): If `True`, the encoder will verify its own
             encoded output by feeding it through an internal decoder and
             comparing the original signal against the decoded signal.
             If a mismatch occurs, the `process` method will raise a

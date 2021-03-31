@@ -11,7 +11,7 @@ Examples
 
 Read a WAV file and pass the audio through the encoder/decoder for the purposes of illustration. ::
 
-      python passthrough.py
+      python3 passthrough.py
 
 This example asserts that the uncompressed data is exactly equal to the original signal.
 
@@ -20,7 +20,7 @@ This example asserts that the uncompressed data is exactly equal to the original
 Stream audio from the microphone input and pass through the encoder printing the effectiveness
 of the compression to the terminal. ::
 
-      python stream.py
+      python3 stream.py
 
 .. note::
       This example requires `sounddevice`, which can be installed with pip.

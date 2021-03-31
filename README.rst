@@ -25,7 +25,7 @@ Installation
 
 You can use pip to download and install the latest release with a single command. ::
 
-    pip install pyflac
+    pip3 install pyflac
 
 .. note::
     pyFLAC depends on `libsndfile`, which requires an extra install step on Linux distributions.
@@ -51,4 +51,4 @@ For more information, print the help info. ::
 
 .. note::
     If you didn't install pyFLAC globally then the command line tool will not be installed on your PATH.
-    However you should still be able to access the tool with `python -m pyflac`.
+    However you should still be able to access the tool with `python3 -m pyflac`.
