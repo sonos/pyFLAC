@@ -14,8 +14,8 @@ from enum import Enum
 import logging
 from pathlib import Path
 import tempfile
-import time
 import threading
+import time
 from typing import Callable, Tuple
 
 import numpy as np
@@ -86,7 +86,7 @@ class _Decoder:
         self._decoder_handle = _ffi.new_handle(self)
         self.logger = logging.getLogger(__name__)
 
-    def finish(self) -> bool:
+    def finish(self):
         """
         Finish the decoding process.
 
@@ -95,7 +95,7 @@ class _Decoder:
 
         A well behaved program should always call this at the end.
         """
-        return _lib.FLAC__stream_decoder_finish(self._decoder)
+        _lib.FLAC__stream_decoder_finish(self._decoder)
 
     # -- State
 
@@ -110,15 +110,10 @@ class _Decoder:
 
     def process(self, data: bytes):
         """
-        Instruct the decoder to process data until the read callback signifies
-        the end of the stream.
+        Instruct the decoder to process some data.
 
-        Note: This will block until the end of the stream, i.e, the read callback
-        returns `None`, or if the read callback raises an exception.
-
-        Raises:
-            DecoderProcessException: if any fatal read, write, or memory allocation
-                error occurred (meaning decoding must stop)
+        Args:
+            data (bytes): Bytes of FLAC data
         """
         self._buffer.append(data)
 
@@ -168,6 +163,7 @@ class StreamDecoder(_Decoder):
                  callback: Callable[[np.ndarray, int, int, int], None]):
         super().__init__()
 
+        self._done = False
         self._buffer = deque()
         self.callback = callback
 
@@ -186,19 +182,45 @@ class StreamDecoder(_Decoder):
         if rc != _lib.FLAC__STREAM_DECODER_INIT_STATUS_OK:
             raise DecoderInitException(rc)
 
-        self.thread = threading.Thread(target=self._process)
-        self.thread.start()
+        self._thread = threading.Thread(target=self._process)
+        self._thread.daemon = True
+        self._thread.start()
 
     def _process(self):
-        result = _lib.FLAC__stream_decoder_process_until_end_of_stream(self._decoder)
-        if self.state != DecoderState.END_OF_STREAM and not result:
-            raise DecoderProcessException(str(self.state))
+        """
+        Internal function to instruct the decoder to process until the end of
+        the stream. This should be run in a separate thread.
+        """
+        if not _lib.FLAC__stream_decoder_process_until_end_of_stream(self._decoder):
+            self._error = 'A fatal read, write, or memory allocation error occurred'
 
     def finish(self):
-        while len(self._buffer) > 0:
+        """
+        Finish the decoding process.
+
+        This must be called at the end of the decoding process.
+
+        Flushes the decoding buffer, closes the processing thread, releases resources, resets the decoder
+        settings to their defaults, and returns the decoder state to `DecoderState.UNINITIALIZED`.
+
+        Raises:
+            DecoderProcessException: if any fatal read, write, or memory allocation
+                error occurred.
+        """
+        # --------------------------------------------------------------
+        # Finish processing what's in the buffer if there are no errors
+        # --------------------------------------------------------------
+        while self._thread.is_alive() and self._error is None and len(self._buffer) > 0:
             time.sleep(0.01)
-        self._buffer.append(bytearray([]))
+
+        # --------------------------------------------------------------
+        # Instruct the decoder to finish up and wait until it is done
+        # --------------------------------------------------------------
+        self._done = True
         super().finish()
+        self._thread.join(timeout=3)
+        if self._error:
+            raise DecoderProcessException(self._error)
 
 
 class FileDecoder(_Decoder):
@@ -255,8 +277,6 @@ class FileDecoder(_Decoder):
         if self.state != DecoderState.END_OF_STREAM and not result:
             raise DecoderProcessException(str(self.state))
 
-        while self.state != DecoderState.END_OF_STREAM:
-            time.sleep(0.01)
         self.finish()
 
         if self.__output:
@@ -293,35 +313,33 @@ def _read_callback(decoder,
         # ----------------------------------------------------------
         return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
 
+    if decoder._done:
+        # ----------------------------------------------------------
+        # The end of the stream has been instructed by a call to
+        # finish.
+        # ----------------------------------------------------------
+        num_bytes[0] = 0
+        return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
+
     maximum_bytes = int(num_bytes[0])
     while len(decoder._buffer) == 0:
         # ----------------------------------------------------------
         # Wait until there is something in the buffer
         # ----------------------------------------------------------
-        time.sleep(0.1)
+        time.sleep(0.01)
 
-    if len(decoder._buffer[0]) == 0:
-        num_bytes[0] = 0
-        # ----------------------------------------------------------
-        # Empty data in the buffer signifies the end of stream
-        # ----------------------------------------------------------
-        return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
-
+    # --------------------------------------------------------------
+    # Ensure only the maximum bytes or less is taken from
+    # the thread safe queue.
+    # --------------------------------------------------------------
     data = bytes()
-    if len(decoder._buffer[0]) == maximum_bytes:
+    if len(decoder._buffer[0]) <= maximum_bytes:
         data = decoder._buffer.popleft()
-    else:
-        # ----------------------------------------------------------
-        # Ensure only the maximum bytes or less is taken from
-        # the thread safe queue.
-        # ----------------------------------------------------------
-        if len(decoder._buffer[0]) < maximum_bytes:
-            data = decoder._buffer.popleft()
-            maximum_bytes -= len(data)
+        maximum_bytes -= len(data)
 
-        if len(decoder._buffer) > 0 and len(decoder._buffer[0]) > maximum_bytes:
-            data += decoder._buffer[0][0:maximum_bytes]
-            decoder._buffer[0] = decoder._buffer[0][maximum_bytes:]
+    if len(decoder._buffer) > 0 and len(decoder._buffer[0]) > maximum_bytes:
+        data += decoder._buffer[0][0:maximum_bytes]
+        decoder._buffer[0] = decoder._buffer[0][maximum_bytes:]
 
     actual_bytes = len(data)
     num_bytes[0] = actual_bytes

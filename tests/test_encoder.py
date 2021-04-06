@@ -104,6 +104,10 @@ class TestStreamEncoder(unittest.TestCase):
                   num_bytes: int,
                   num_samples: int,
                   current_frame: int):
+        assert isinstance(buffer, bytes)
+        assert isinstance(num_bytes, int)
+        assert isinstance(num_samples, int)
+        assert isinstance(current_frame, int)
         self.callback_called = True
 
     def test_invalid_sample_rate(self):

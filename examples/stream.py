@@ -79,7 +79,6 @@ class AudioStream:
     def __init__(self, args):
         self.stream = sd.InputStream(
             dtype='int16',
-            channels=1,
             blocksize=args.block_size,
             callback=self.audio_callback
         )
