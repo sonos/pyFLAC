@@ -121,19 +121,6 @@ class _Decoder:
                 error occurred (meaning decoding must stop)
         """
         self._buffer.append(data)
-        # self.process_frame()
-
-    def process_frame(self):
-        """
-        Instruct the decoder to process at most one metadata block or audio frame.
-        Unless the read callback raises an exception.
-
-        Raises:
-            DecoderProcessException: if any fatal read, write, or memory allocation
-                error occurred (meaning decoding must stop)
-        """
-        if not _lib.FLAC__stream_decoder_process_single(self._decoder):
-            raise DecoderProcessException(str(self.state))
 
 
 class StreamDecoder(_Decoder):
@@ -141,7 +128,7 @@ class StreamDecoder(_Decoder):
     A pyFLAC stream decoder converts a stream of FLAC encoded bytes
     back to raw audio data.
 
-    The compressed data is requested via the `read_callback`, and
+    The compressed data is passed in via the `process` method, and
     blocks of raw uncompressed audio is passed back to the user via
     the `callback`.
 
@@ -207,6 +194,12 @@ class StreamDecoder(_Decoder):
         if self.state != DecoderState.END_OF_STREAM and not result:
             raise DecoderProcessException(str(self.state))
 
+    def finish(self):
+        while len(self._buffer) > 0:
+            time.sleep(0.01)
+        self._buffer.append(bytearray([]))
+        super().finish()
+
 
 class FileDecoder(_Decoder):
     """
@@ -263,7 +256,7 @@ class FileDecoder(_Decoder):
             raise DecoderProcessException(str(self.state))
 
         while self.state != DecoderState.END_OF_STREAM:
-            time.sleep(0.1)
+            time.sleep(0.01)
         self.finish()
 
         if self.__output:
@@ -301,42 +294,39 @@ def _read_callback(decoder,
         return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
 
     maximum_bytes = int(num_bytes[0])
-    if len(decoder._buffer) == 0:
+    while len(decoder._buffer) == 0:
         # ----------------------------------------------------------
-        # Just continue until data is ready to be processed
+        # Wait until there is something in the buffer
         # ----------------------------------------------------------
-        print('c', end='')
+        time.sleep(0.1)
+
+    if len(decoder._buffer[0]) == 0:
         num_bytes[0] = 0
-        return _lib.FLAC__STREAM_DECODER_READ_STATUS_CONTINUE
+        # ----------------------------------------------------------
+        # Empty data in the buffer signifies the end of stream
+        # ----------------------------------------------------------
+        return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
+
+    data = bytes()
+    if len(decoder._buffer[0]) == maximum_bytes:
+        data = decoder._buffer.popleft()
     else:
-        if len(decoder._buffer[0]) == 0:
-            num_bytes[0] = 0
-            # ------------------------------------------------------
-            # Empty data in the buffer signifies the end of stream
-            # ------------------------------------------------------
-            return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
-
-        data = bytes()
-        print('_', end='')
-        if len(decoder._buffer[0]) == maximum_bytes:
+        # ----------------------------------------------------------
+        # Ensure only the maximum bytes or less is taken from
+        # the thread safe queue.
+        # ----------------------------------------------------------
+        if len(decoder._buffer[0]) < maximum_bytes:
             data = decoder._buffer.popleft()
-        else:
-            # ------------------------------------------------------
-            # Ensure only the maximum bytes or less is taken from
-            # the thread safe queue.
-            # ------------------------------------------------------
-            if len(decoder._buffer[0]) < maximum_bytes:
-                data = decoder._buffer.popleft()
-                maximum_bytes -= len(data)
+            maximum_bytes -= len(data)
 
-            if len(decoder._buffer) > 0 and len(decoder._buffer[0]) > maximum_bytes:
-                data += decoder._buffer[0][0:maximum_bytes]
-                decoder._buffer[0] = decoder._buffer[0][maximum_bytes:]
+        if len(decoder._buffer) > 0 and len(decoder._buffer[0]) > maximum_bytes:
+            data += decoder._buffer[0][0:maximum_bytes]
+            decoder._buffer[0] = decoder._buffer[0][maximum_bytes:]
 
-        actual_bytes = len(data)
-        num_bytes[0] = actual_bytes
-        _ffi.memmove(byte_buffer, data, actual_bytes)
-        return _lib.FLAC__STREAM_DECODER_READ_STATUS_CONTINUE
+    actual_bytes = len(data)
+    num_bytes[0] = actual_bytes
+    _ffi.memmove(byte_buffer, data, actual_bytes)
+    return _lib.FLAC__STREAM_DECODER_READ_STATUS_CONTINUE
 
 
 @_ffi.def_extern()

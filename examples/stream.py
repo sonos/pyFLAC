@@ -32,9 +32,10 @@ class ProcessingThread(threading.Thread):
         super().__init__()
         self.output_file = None
         self.queue = queue.SimpleQueue()
+        self.num_channels = stream.channels
         self.sample_size = stream.samplesize
 
-        self.encoder = pyflac.StreamEncoder(write_callback=self.encoder_callback,
+        self.encoder = pyflac.StreamEncoder(callback=self.encoder_callback,
                                             sample_rate=int(stream.samplerate),
                                             compression_level=args.compression_level)
 
@@ -53,9 +54,9 @@ class ProcessingThread(threading.Thread):
             print('FLAC header')
         else:
             print('Encoded {actual_bytes} bytes in {num_bytes} bytes: {ratio:.2f}%'.format(
-                actual_bytes=num_samples * self.sample_size,
+                actual_bytes=num_samples * self.num_channels * self.sample_size,
                 num_bytes=num_bytes,
-                ratio=num_bytes / (num_samples * self.sample_size) * 100
+                ratio=num_bytes / (num_samples * self.num_channels * self.sample_size) * 100
             ))
 
         if self.output_file:
