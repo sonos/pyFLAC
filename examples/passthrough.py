@@ -32,19 +32,23 @@ class Passthrough:
         self.data, self.sr = sf.read(args.input_file, dtype='int16', always_2d=True)
 
         self.encoder = pyflac.StreamEncoder(
-            write_callback=self.encoder_callback,
+            callback=self.encoder_callback,
             sample_rate=self.sr,
             blocksize=args.block_size,
         )
 
         self.decoder = pyflac.StreamDecoder(
-            read_callback=self.decoder_read_callback,
-            write_callback=self.decoder_write_callback
+            callback=self.decoder_callback
         )
 
-    def process(self):
+    def encode(self):
         self.encoder.process(self.data)
-        self.decoder.process()
+        self.encoder.finish()
+
+    def decode(self):
+        while not self.queue.empty():
+            self.decoder.process(self.queue.get())
+        self.decoder.finish()
 
     def encoder_callback(self,
                          buffer: bytes,
@@ -54,17 +58,11 @@ class Passthrough:
         self.total_bytes += num_bytes
         self.queue.put(buffer)
 
-    def decoder_read_callback(self, num_bytes: int) -> bytes:
-        try:
-            return self.queue.get(block=False)
-        except queue.Empty:
-            return None
-
-    def decoder_write_callback(self,
-                               data: np.ndarray,
-                               sample_rate: int,
-                               num_channels: int,
-                               num_samples: int):
+    def decoder_callback(self,
+                         data: np.ndarray,
+                         sample_rate: int,
+                         num_channels: int,
+                         num_samples: int):
         assert self.sr == sample_rate
         assert np.array_equal(data, self.data[self.idx:self.idx + num_samples])
         self.idx += num_samples
@@ -82,7 +80,8 @@ def main():
     args = parser.parse_args()
 
     flac = Passthrough(args)
-    flac.process()
+    flac.encode()
+    flac.decode()
 
     print('Verified OK')
     print('Compression ratio = {ratio:.2f}%'.format(

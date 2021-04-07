@@ -216,11 +216,11 @@ class StreamEncoder(_Encoder):
     raw audio data.
 
     Raw audio data is passed in via the `process` method, and chunks
-    of compressed data is passed back to the user via the `write_callback`.
+    of compressed data is passed back to the user via the `callback`.
 
     Args:
         sample_rate (int): The raw audio sample rate (Hz)
-        write_callback (fn): Function to call when there is compressed
+        callback (fn): Function to call when there is compressed
             data ready, see the example below for more information.
         compression_level (int): The compression level parameter that
             varies from 0 (fastest) to 8 (slowest). The default setting
@@ -236,17 +236,17 @@ class StreamEncoder(_Encoder):
             encoding process by the extra time required for decoding and comparison.
 
     Examples:
-        An example write callback which adds the encoded data to a queue for
+        An example callback which adds the encoded data to a queue for
         later processing.
 
         .. code-block:: python
             :linenos:
 
-            def write_callback(self,
-                               buffer: bytes,
-                               num_bytes: int,
-                               num_samples: int,
-                               current_frame: int):
+            def callback(self,
+                         buffer: bytes,
+                         num_bytes: int,
+                         num_samples: int,
+                         current_frame: int):
                 if num_samples == 0:
                     # If there are no samples in the encoded data, this is
                     # a FLAC header. The header data will arrive in several
@@ -262,13 +262,13 @@ class StreamEncoder(_Encoder):
     """
     def __init__(self,
                  sample_rate: int,
-                 write_callback: Callable[[bytes, int, int, int], None],
+                 callback: Callable[[bytes, int, int, int], None],
                  compression_level: int = 5,
                  blocksize: int = 0,
                  verify: bool = False):
         super().__init__()
 
-        self.write_callback = write_callback
+        self.callback = callback
 
         self._sample_rate = sample_rate
         self._blocksize = blocksize
@@ -386,7 +386,7 @@ def _write_callback(encoder,
     """
     encoder = _ffi.from_handle(client_data)
     buffer = bytes(_ffi.buffer(byte_buffer, num_bytes))
-    encoder.write_callback(
+    encoder.callback(
         buffer,
         num_bytes,
         num_samples,

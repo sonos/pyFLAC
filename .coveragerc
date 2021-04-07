@@ -1,6 +1,7 @@
 [run]
 source = pyflac
 relative_files = True
+concurrency = thread
 
 omit =
     */tests/*
