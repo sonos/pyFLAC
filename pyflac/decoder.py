@@ -108,14 +108,8 @@ class _Decoder:
 
     # -- Processing
 
-    def process(self, data: bytes):
-        """
-        Instruct the decoder to process some data.
-
-        Args:
-            data (bytes): Bytes of FLAC data
-        """
-        self._buffer.append(data)
+    def process(self):
+        raise NotImplementedError
 
 
 class StreamDecoder(_Decoder):
@@ -186,6 +180,8 @@ class StreamDecoder(_Decoder):
         self._thread.daemon = True
         self._thread.start()
 
+    # -- Processing
+
     def _process(self):
         """
         Internal function to instruct the decoder to process until the end of
@@ -193,6 +189,18 @@ class StreamDecoder(_Decoder):
         """
         if not _lib.FLAC__stream_decoder_process_until_end_of_stream(self._decoder):
             self._error = 'A fatal read, write, or memory allocation error occurred'
+
+    def process(self, data: bytes):
+        """
+        Instruct the decoder to process some data.
+
+        Note: This is a non-blocking function, data is processed in
+        a background thread.
+
+        Args:
+            data (bytes): Bytes of FLAC data
+        """
+        self._buffer.append(data)
 
     def finish(self):
         """
