@@ -67,8 +67,9 @@ class ProcessingThread(threading.Thread):
     def run(self):
         while self.running:
             while not self.queue.empty():
-                data = np.asarray(self.queue.get(), dtype=np.int16, order='C')
-                self.encoder.process(data)
+                data = np.frombuffer(self.queue.get(), dtype=np.int16)
+                samples = data.reshape((len(data) // self.num_channels, self.num_channels))
+                self.encoder.process(samples)
             time.sleep(0.1)
 
         self.encoder.finish()
@@ -80,7 +81,7 @@ class ProcessingThread(threading.Thread):
 class AudioStream:
 
     def __init__(self, args):
-        self.stream = sd.InputStream(
+        self.stream = sd.RawInputStream(
             dtype='int16',
             blocksize=args.block_size,
             callback=self.audio_callback
@@ -96,7 +97,7 @@ class AudioStream:
         self.thread.stop()
 
     def audio_callback(self, indata, frames, sd_time, status):
-        self.thread.queue.put(np.copy(indata, order='C'))
+        self.thread.queue.put(bytes(indata))
 
 
 def main():
