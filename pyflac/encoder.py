@@ -372,7 +372,7 @@ class FileEncoder(_Encoder):
 
 
 @_ffi.def_extern(error=_lib.FLAC__STREAM_ENCODER_WRITE_STATUS_FATAL_ERROR)
-def _write_callback(encoder,
+def _write_callback(_encoder,
                     byte_buffer,
                     num_bytes,
                     num_samples,
@@ -396,21 +396,21 @@ def _write_callback(encoder,
 
 
 @_ffi.def_extern()
-def _seek_callback(encoder,
+def _seek_callback(_encoder,
                    absolute_byte_offset,
                    client_data):
     raise NotImplementedError
 
 
 @_ffi.def_extern()
-def _tell_callback(encoder,
+def _tell_callback(_encoder,
                    absolute_byte_offset,
                    client_data):
     raise NotImplementedError
 
 
 @_ffi.def_extern()
-def _metadata_callback(encoder,
+def _metadata_callback(_encoder,
                        metadata,
                        client_data):
     """
@@ -424,7 +424,7 @@ def _metadata_callback(encoder,
 
 
 @_ffi.def_extern()
-def _progress_callback(encoder,
+def _progress_callback(_encoder,
                        bytes_written,
                        samples_written,
                        frames_written,
