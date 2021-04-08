@@ -304,7 +304,7 @@ class FileDecoder(_Decoder):
 
 
 @_ffi.def_extern(error=_lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT)
-def _read_callback(decoder,
+def _read_callback(_decoder,
                    byte_buffer,
                    num_bytes,
                    client_data):
@@ -356,34 +356,34 @@ def _read_callback(decoder,
 
 
 @_ffi.def_extern()
-def _seek_callback(decoder,
+def _seek_callback(_decoder,
                    absolute_byte_offset,
                    client_data):
     raise NotImplementedError
 
 
 @_ffi.def_extern()
-def _tell_callback(decoder,
+def _tell_callback(_decoder,
                    absolute_byte_offset,
                    client_data):
     raise NotImplementedError
 
 
 @_ffi.def_extern()
-def _length_callback(decoder,
+def _length_callback(_decoder,
                      stream_length,
                      client_data):
     raise NotImplementedError
 
 
 @_ffi.def_extern()
-def _eof_callback(decoder,
+def _eof_callback(_decoder,
                   client_data):
     raise NotImplementedError
 
 
 @_ffi.def_extern(error=_lib.FLAC__STREAM_DECODER_WRITE_STATUS_ABORT)
-def _write_callback(decoder,
+def _write_callback(_decoder,
                     frame,
                     buffer,
                     client_data):
@@ -429,14 +429,14 @@ def _write_callback(decoder,
 
 
 @_ffi.def_extern()
-def _metadata_callback(decoder,
+def _metadata_callback(_decoder,
                        metadata,
                        client_data):
     raise NotImplementedError
 
 
 @_ffi.def_extern()
-def _error_callback(decoder,
+def _error_callback(_decoder,
                     status,
                     client_data):
     """

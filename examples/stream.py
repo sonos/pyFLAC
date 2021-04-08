@@ -21,9 +21,9 @@ import queue
 import threading
 import time
 
+import numpy as np
 import pyflac
 import sounddevice as sd
-import soundfile as sf
 
 
 class ProcessingThread(threading.Thread):
@@ -53,7 +53,8 @@ class ProcessingThread(threading.Thread):
         if num_samples == 0:
             print('FLAC header')
         else:
-            print('Encoded {actual_bytes} bytes in {num_bytes} bytes: {ratio:.2f}%'.format(
+            print('{i}: Encoded {actual_bytes} bytes in {num_bytes} bytes: {ratio:.2f}%'.format(
+                i=current_frame,
                 actual_bytes=num_samples * self.num_channels * self.sample_size,
                 num_bytes=num_bytes,
                 ratio=num_bytes / (num_samples * self.num_channels * self.sample_size) * 100
@@ -66,7 +67,10 @@ class ProcessingThread(threading.Thread):
     def run(self):
         while self.running:
             while not self.queue.empty():
-                self.encoder.process(self.queue.get())
+                data = np.frombuffer(self.queue.get(), dtype=np.int16)
+                samples = data.reshape((len(data) // self.num_channels, self.num_channels))
+                self.encoder.process(samples)
+            time.sleep(0.1)
 
         self.encoder.finish()
         if self.output_file:
@@ -77,7 +81,7 @@ class ProcessingThread(threading.Thread):
 class AudioStream:
 
     def __init__(self, args):
-        self.stream = sd.InputStream(
+        self.stream = sd.RawInputStream(
             dtype='int16',
             blocksize=args.block_size,
             callback=self.audio_callback
@@ -93,7 +97,7 @@ class AudioStream:
         self.thread.stop()
 
     def audio_callback(self, indata, frames, sd_time, status):
-        self.thread.queue.put(indata)
+        self.thread.queue.put(bytes(indata))
 
 
 def main():
