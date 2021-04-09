@@ -34,8 +34,11 @@ def get_args():
 
 def main():
     args = get_args()
+    with open(args.input_file, 'rb') as f:
+        header = f.read(4).decode().upper()
+
     filename, extension = os.path.splitext(args.input_file)
-    if extension == '.wav':
+    if header == 'RIFF':
         args.output_file = f'{filename}.flac' if args.output_file is None else args.output_file
         encoder = FileEncoder(
             input_file=args.input_file,
@@ -45,12 +48,12 @@ def main():
             verify=args.verify
         )
         encoder.process()
-    elif extension == '.flac':
+    elif header == 'FLAC':
         args.output_file = f'{filename}.wav' if args.output_file is None else args.output_file
         decoder = FileDecoder(args.input_file, args.output_file)
         decoder.process()
     else:
-        raise ValueError('Please provide either a .wav or a .flac file')
+        raise ValueError('Please provide either a WAV or a FLAC file')
 
 
 if __name__ == '__main__':
