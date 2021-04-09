@@ -27,6 +27,14 @@ of the compression to the terminal. ::
       See the `sounddevice <https://python-sounddevice.readthedocs.io/>`_ documentation for more information.
 
 
+Limitations
+-----------
+
+- pyFLAC currently only supports 16-bit audio.
+- FLAC metadata handling is not implemented.
+- Seek/tell functionality is not implemented.
+
+
 API Reference
 =============
 
