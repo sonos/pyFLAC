@@ -46,6 +46,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+junit-report.xml
 *.cover
 *.py,cover
 .hypothesis/
@@ -127,3 +128,19 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# VSCode
+.vscode/
+
+# macOS
+.DS_Store
+
+# CFFI
+*.o
+*.c
+
+# Audio
+*.flac
+
+# Development
+.archive
