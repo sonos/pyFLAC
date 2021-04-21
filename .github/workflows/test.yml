@@ -34,6 +34,12 @@ jobs:
         pip install tox tox-gh-actions
     - name: Run tests
       run: tox
+    - name: Run coveralls
+      uses: AndreMiras/coveralls-python-action@develop
+      with:
+        parallel: true
+        flag-name: test
+        debug: true
 
   macos:
     runs-on: macos-latest
@@ -58,3 +64,13 @@ jobs:
         submodules: recursive
     - name: Check install
       run: python setup.py install
+
+  finish:
+    needs: linux
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: AndreMiras/coveralls-python-action@develop
+      with:
+        parallel-finished: true
+        debug: true
