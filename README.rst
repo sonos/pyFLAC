@@ -1,4 +1,4 @@
-.. image:: https://github.com/sonos/pyFLAC/assets/logo-black.png
+.. image:: https://raw.githubusercontent.com/sonos/pyFLAC/develop/assets/logo-black.png
     :target: https://pyflac.readthedocs.io
 
 .. image:: https://github.com/sonos/pyFLAC/actions/workflows/lint.yml/badge.svg
