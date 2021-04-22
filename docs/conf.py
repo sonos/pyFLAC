@@ -12,9 +12,9 @@
 #
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
-
 
 # -- Project information -----------------------------------------------------
 
@@ -22,8 +22,14 @@ project = 'pyFLAC'
 copyright = '2021, Sonos, Inc'
 author = 'Joe Todd'
 
-
 # -- General configuration ---------------------------------------------------
+
+autodoc_mock_imports = [
+    'numpy',
+    'soundfile',
+    'pyflac._encoder',
+    'pyflac._decoder'
+]
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #

@@ -1,13 +1,19 @@
-pyFLAC
-======
+.. image:: https://sonos.github.io/pyFLAC/assets/logo-black.png
+    :target: https://pyflac.readthedocs.io
 
-.. image:: https://github.com/Sonos-Inc/pyFLAC/actions/workflows/lint.yml/badge.svg
-    :target: https://github.com/Sonos-Inc/pyFLAC/actions/workflows/lint.yml
-.. image:: https://github.com/Sonos-Inc/pyFLAC/actions/workflows/test.yml/badge.svg
-    :target: https://github.com/Sonos-Inc/pyFLAC/actions/workflows/test.yml
-.. image:: https://github.com/Sonos-Inc/pyFLAC/actions/workflows/build.yml/badge.svg
-    :target: https://github.com/Sonos-Inc/pyFLAC/actions/workflows/build.yml
-.. image:: https://img.shields.io/pypi/pyversions/pysoundio
+.. image:: https://github.com/sonos/pyFLAC/actions/workflows/lint.yml/badge.svg
+    :target: https://github.com/sonos/pyFLAC/actions/workflows/lint.yml
+.. image:: https://github.com/sonos/pyFLAC/actions/workflows/test.yml/badge.svg
+    :target: https://github.com/sonos/pyFLAC/actions/workflows/test.yml
+.. image:: https://github.com/sonos/pyFLAC/actions/workflows/build.yml/badge.svg
+    :target: https://github.com/sonos/pyFLAC/actions/workflows/build.yml
+.. image:: https://coveralls.io/repos/github/sonos/pyFLAC/badge.svg
+    :target: https://coveralls.io/github/sonos/pyFLAC
+.. image:: https://readthedocs.org/projects/pyflac/badge
+    :target: https://pyflac.readthedocs.io/en/latest/
+.. image:: https://badge.fury.io/py/pyFLAC.svg
+    :target: https://badge.fury.io/py/pyFLAC
+.. image:: https://img.shields.io/pypi/pyversions/pyFLAC
     :target: https://pypi.org/project/pyFLAC
 
 A simple Pythonic interface for `libFLAC <https://xiph.org/flac>`_.
