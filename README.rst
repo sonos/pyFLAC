@@ -1,4 +1,4 @@
-.. image:: https://raw.githubusercontent.com/sonos/pyFLAC/develop/assets/logo-black.png
+.. image:: https://raw.githubusercontent.com/sonos/pyFLAC/develop/assets/logo-white-background.jpg
     :target: https://pyflac.readthedocs.io
 
 .. image:: https://github.com/sonos/pyFLAC/actions/workflows/lint.yml/badge.svg
@@ -15,6 +15,7 @@
     :target: https://badge.fury.io/py/pyFLAC
 .. image:: https://img.shields.io/pypi/pyversions/pyFLAC
     :target: https://pypi.org/project/pyFLAC
+
 
 A simple Pythonic interface for `libFLAC <https://xiph.org/flac>`_.
 
