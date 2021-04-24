@@ -209,6 +209,19 @@ class _Encoder:
     def _compression_level(self, value: int):
         _lib.FLAC__stream_encoder_set_compression_level(self._encoder, value)
 
+    @property
+    def _streamable_subset(self) -> bool:
+        """
+        bool: Property to get/set the streamable subset setting.
+            If true, the encoder will comply with the Subset and will check the settings during
+            init. If false, the settings may take advantage of the full range that the format allows.
+        """
+        return _lib.FLAC__stream_encoder_get_streamable_subset(self._encoder)
+
+    @_streamable_subset.setter
+    def _streamable_subset(self, value: bool):
+        _lib.FLAC__stream_encoder_set_streamable_subset(self._encoder, value)
+
 
 class StreamEncoder(_Encoder):
     """
@@ -232,6 +245,9 @@ class StreamEncoder(_Encoder):
         blocksize (int): The size of the block to be returned in the
             callback. The default is 0 which allows libFLAC to determine
             the best block size.
+        streamable_subset (bool): Whether to use the streamable subset for encoding.
+            If true the encoder will check settings for compatibility. If false,
+            the settings may take advantage of the full range that the format allows.
         verify (bool): If `True`, the encoder will verify its own
             encoded output by feeding it through an internal decoder and
             comparing the original signal against the decoded signal.
@@ -272,6 +288,7 @@ class StreamEncoder(_Encoder):
                  metadata_callback: Callable[[int], None] = None,
                  compression_level: int = 5,
                  blocksize: int = 0,
+                 streamable_subset: bool = True,
                  verify: bool = False):
         super().__init__()
 
@@ -283,6 +300,7 @@ class StreamEncoder(_Encoder):
         self._sample_rate = sample_rate
         self._blocksize = blocksize
         self._compression_level = compression_level
+        self._streamable_subset = streamable_subset
         self._verify = verify
 
     def _init(self):
@@ -315,6 +333,9 @@ class FileEncoder(_Encoder):
         blocksize (int): The size of the block to be returned in the
             callback. The default is 0 which allows libFLAC to determine
             the best block size.
+        streamable_subset (bool): Whether to use the streamable subset for encoding.
+            If true the encoder will check settings for compatibility. If false,
+            the settings may take advantage of the full range that the format allows.
         verify (bool): If `True`, the encoder will verify it's own
             encoded output by feeding it through an internal decoder and
             comparing the original signal against the decoded signal.
@@ -330,6 +351,7 @@ class FileEncoder(_Encoder):
                  output_file: Path = None,
                  compression_level: int = 5,
                  blocksize: int = 0,
+                 streamable_subset: bool = True,
                  verify: bool = False):
         super().__init__()
 
@@ -343,6 +365,7 @@ class FileEncoder(_Encoder):
         self._sample_rate = sample_rate
         self._blocksize = blocksize
         self._compression_level = compression_level
+        self._streamable_subset = streamable_subset
         self._verify = verify
 
     def _init(self):
