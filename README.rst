@@ -16,6 +16,7 @@
 .. image:: https://img.shields.io/pypi/pyversions/pyFLAC
     :target: https://pypi.org/project/pyFLAC
 
+-------------------------------------------------------------------
 
 A simple Pythonic interface for `libFLAC <https://xiph.org/flac>`_.
 
