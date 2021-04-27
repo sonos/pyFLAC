@@ -65,6 +65,12 @@ class TestEncoder(unittest.TestCase):
         self.encoder._blocksize = test_blocksize
         self.assertEqual(self.encoder._blocksize, test_blocksize)
 
+    def test_streamable_subset(self):
+        """ Test that the streamable_subset setter returns the same value from libFLAC """
+        test_streamable_subset = False
+        self.encoder._streamable_subset = test_streamable_subset
+        self.assertEqual(self.encoder._streamable_subset, test_streamable_subset)
+
     def test_compression_level(self):
         """ Test that the compression level setter returns the same value from libFLAC """
         test_compression_level = 8
@@ -123,6 +129,20 @@ class TestStreamEncoder(unittest.TestCase):
         with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE'):
             self.encoder._init()
 
+    def test_blocksize_streamable_subset(self):
+        """ Test that an exception is raised if blocksize is outside the streamable subset and streamable is unset """
+        self.default_kwargs['blocksize'] = 65535
+        self.encoder = StreamEncoder(**self.default_kwargs)
+        with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE'):
+            self.encoder._init()
+
+    def test_blocksize_lax(self):
+        """ Test that an exception is not raised on large blocks when in lax mode """
+        self.default_kwargs['blocksize'] = 65535
+        self.default_kwargs['streamable_subset'] = False
+        self.encoder = StreamEncoder(**self.default_kwargs)
+        self.encoder._init()
+
     def test_process_mono(self):
         """ Test that an array of int16 mono samples can be processed """
         self.encoder = StreamEncoder(**self.default_kwargs)
@@ -158,6 +178,20 @@ class TestFileEncoder(unittest.TestCase):
         self.encoder = FileEncoder(**self.default_kwargs)
         with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE'):
             self.encoder._init()
+
+    def test_blocksize_streamable_subset(self):
+        """ Test that an exception is raised if blocksize is outside the streamable subset """
+        self.default_kwargs['blocksize'] = 65535
+        self.encoder = FileEncoder(**self.default_kwargs)
+        with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE'):
+            self.encoder._init()
+
+    def test_blocksize_lax(self):
+        """ Test that an exception is not raised on large blocks when in lax mode """
+        self.default_kwargs['blocksize'] = 65535
+        self.default_kwargs['streamable_subset'] = False
+        self.encoder = FileEncoder(**self.default_kwargs)
+        self.encoder._init()
 
     def test_state(self):
         """ Test that the initial state is ok """
