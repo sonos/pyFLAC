@@ -113,9 +113,8 @@ class TestStreamEncoder(unittest.TestCase):
     def test_invalid_sample_rate(self):
         """ Test than an exception is raised if given an invalid sample rate """
         self.encoder = StreamEncoder(sample_rate=1000000, write_callback=self._callback)
-        with self.assertRaises(EncoderInitException) as err:
+        with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE'):
             self.encoder._init()
-            self.assertEqual(str(err), 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE')
 
     def test_invalid_blocksize(self):
         """ Test than an exception is raised if given an invalid block size """
@@ -124,9 +123,8 @@ class TestStreamEncoder(unittest.TestCase):
             blocksize=1000000,
             write_callback=self._callback
         )
-        with self.assertRaises(EncoderInitException) as err:
+        with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE'):
             self.encoder._init()
-            self.assertEqual(str(err), 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE')
 
     def test_process_mono(self):
         """ Test that an array of int16 mono samples can be processed """
@@ -161,7 +159,7 @@ class TestFileEncoder(unittest.TestCase):
         """ Test than an exception is raised if given an invalid block size """
         self.default_kwargs['blocksize'] = 1000000
         self.encoder = FileEncoder(**self.default_kwargs)
-        with self.assertRaises(EncoderInitException):
+        with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE'):
             self.encoder._init()
 
     def test_state(self):
