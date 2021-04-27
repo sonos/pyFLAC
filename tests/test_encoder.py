@@ -111,18 +111,15 @@ class TestStreamEncoder(unittest.TestCase):
         self.callback_called = True
 
     def test_invalid_sample_rate(self):
-        """ Test than an exception is raised if given an invalid sample rate """
-        self.encoder = StreamEncoder(sample_rate=1000000, write_callback=self._callback)
+        self.default_kwargs['sample_rate'] = 1000000
+        self.encoder = StreamEncoder(**self.default_kwargs)
         with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE'):
             self.encoder._init()
 
     def test_invalid_blocksize(self):
         """ Test than an exception is raised if given an invalid block size """
-        self.encoder = StreamEncoder(
-            sample_rate=DEFAULT_SAMPLE_RATE,
-            blocksize=1000000,
-            write_callback=self._callback
-        )
+        self.default_kwargs['blocksize'] = 1000000
+        self.encoder = StreamEncoder(**self.default_kwargs)
         with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE'):
             self.encoder._init()
 
