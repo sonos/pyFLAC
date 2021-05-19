@@ -35,7 +35,7 @@ class ProcessingThread(threading.Thread):
         self.num_channels = stream.channels
         self.sample_size = stream.samplesize
 
-        self.encoder = pyflac.StreamEncoder(callback=self.encoder_callback,
+        self.encoder = pyflac.StreamEncoder(write_callback=self.encoder_callback,
                                             sample_rate=int(stream.samplerate),
                                             compression_level=args.compression_level)
 

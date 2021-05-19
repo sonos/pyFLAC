@@ -122,7 +122,7 @@ class StreamDecoder(_Decoder):
     the `callback`.
 
     Args:
-        callback (fn): Function to call when there is uncompressed
+        write_callback (fn): Function to call when there is uncompressed
             audio data ready, see the example below for more information.
 
     Examples:
@@ -154,12 +154,12 @@ class StreamDecoder(_Decoder):
         DecoderInitException: If initialisation of the decoder fails
     """
     def __init__(self,
-                 callback: Callable[[np.ndarray, int, int, int], None]):
+                 write_callback: Callable[[np.ndarray, int, int, int], None]):
         super().__init__()
 
         self._done = False
         self._buffer = deque()
-        self.callback = callback
+        self.write_callback = write_callback
 
         rc = _lib.FLAC__stream_decoder_init_stream(
             self._decoder,
@@ -250,7 +250,7 @@ class FileDecoder(_Decoder):
         super().__init__()
 
         self.__output = None
-        self.callback = self._callback
+        self.write_callback = self._write_callback
         if output_file:
             self.__output_file = output_file
         else:
@@ -291,7 +291,7 @@ class FileDecoder(_Decoder):
             self.__output.close()
             return sf.read(str(self.__output_file), always_2d=True)
 
-    def _callback(self, data: np.ndarray, sample_rate: int, num_channels: int, num_samples: int):
+    def _write_callback(self, data: np.ndarray, sample_rate: int, num_channels: int, num_samples: int):
         """
         Internal callback to write the decoded data to a WAV file.
         """
@@ -418,7 +418,7 @@ def _write_callback(_decoder,
             np.frombuffer(cbuffer, dtype='int32').astype(np.int16)
         )
     output = np.column_stack(channels)
-    decoder.callback(
+    decoder.write_callback(
         output,
         int(frame.header.sample_rate),
         int(frame.header.channels),
