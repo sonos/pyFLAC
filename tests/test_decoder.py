@@ -45,22 +45,22 @@ class TestStreamDecoder(unittest.TestCase):
     """
     def setUp(self):
         self.decoder = None
-        self.callback_called = False
+        self.write_callback_called = False
         self.tests_path = pathlib.Path(__file__).parent.absolute()
 
-    def _callback(self, data, rate, channels, samples):
+    def _write_callback(self, data, rate, channels, samples):
         assert isinstance(data, np.ndarray)
         assert isinstance(rate, int)
         assert isinstance(channels, int)
         assert isinstance(samples, int)
-        self.callback_called = True
+        self.write_callback_called = True
 
     def test_process_invalid_data(self):
         """ Test that processing invalid data raises an exception """
         test_data = bytearray(os.urandom(100000))
 
         with self.assertRaises(DecoderProcessException):
-            self.decoder = StreamDecoder(callback=self._callback)
+            self.decoder = StreamDecoder(write_callback=self._write_callback)
             self.decoder.process(test_data)
             self.decoder.finish()
 
@@ -70,12 +70,12 @@ class TestStreamDecoder(unittest.TestCase):
         with open(test_path, 'rb') as flac:
             test_data = flac.read()
 
-        self.decoder = StreamDecoder(callback=self._callback)
+        self.decoder = StreamDecoder(write_callback=self._write_callback)
         time.sleep(0.05)
 
         self.decoder.process(test_data)
         self.decoder.finish()
-        self.assertTrue(self.callback_called)
+        self.assertTrue(self.write_callback_called)
 
     def test_process_blocks(self):
         """ Test that FLAC data can be decoded in blocks """
@@ -85,7 +85,7 @@ class TestStreamDecoder(unittest.TestCase):
             test_data = flac.read()
             data_length = len(test_data)
 
-        self.decoder = StreamDecoder(callback=self._callback)
+        self.decoder = StreamDecoder(write_callback=self._write_callback)
         for i in range(0, data_length - blocksize, blocksize):
             self.decoder.process(test_data[i:i + blocksize])
 

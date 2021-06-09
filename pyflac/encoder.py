@@ -209,6 +209,19 @@ class _Encoder:
     def _compression_level(self, value: int):
         _lib.FLAC__stream_encoder_set_compression_level(self._encoder, value)
 
+    @property
+    def _streamable_subset(self) -> bool:
+        """
+        bool: Property to get/set the streamable subset setting.
+            If true, the encoder will comply with the Subset and will check the settings during
+            init. If false, the settings may take advantage of the full range that the format allows.
+        """
+        return _lib.FLAC__stream_encoder_get_streamable_subset(self._encoder)
+
+    @_streamable_subset.setter
+    def _streamable_subset(self, value: bool):
+        _lib.FLAC__stream_encoder_set_streamable_subset(self._encoder, value)
+
 
 class StreamEncoder(_Encoder):
     """
@@ -216,18 +229,25 @@ class StreamEncoder(_Encoder):
     raw audio data.
 
     Raw audio data is passed in via the `process` method, and chunks
-    of compressed data is passed back to the user via the `callback`.
+    of compressed data is passed back to the user via the `write_callback`.
 
     Args:
         sample_rate (int): The raw audio sample rate (Hz)
-        callback (fn): Function to call when there is compressed
+        write_callback (fn): Function to call when there is compressed
             data ready, see the example below for more information.
+        seek_callback (fn): Optional function to call when the encoder
+            wants to seek within the output file.
+        tell_callback (fn): Optional function to call when the encoder
+             wants to find the current position within the output file.
         compression_level (int): The compression level parameter that
             varies from 0 (fastest) to 8 (slowest). The default setting
             is 5, see https://en.wikipedia.org/wiki/FLAC for more details.
         blocksize (int): The size of the block to be returned in the
             callback. The default is 0 which allows libFLAC to determine
             the best block size.
+        streamable_subset (bool): Whether to use the streamable subset for encoding.
+            If true the encoder will check settings for compatibility. If false,
+            the settings may take advantage of the full range that the format allows.
         verify (bool): If `True`, the encoder will verify its own
             encoded output by feeding it through an internal decoder and
             comparing the original signal against the decoded signal.
@@ -236,17 +256,17 @@ class StreamEncoder(_Encoder):
             encoding process by the extra time required for decoding and comparison.
 
     Examples:
-        An example callback which adds the encoded data to a queue for
+        An example write callback which adds the encoded data to a queue for
         later processing.
 
         .. code-block:: python
             :linenos:
 
-            def callback(self,
-                         buffer: bytes,
-                         num_bytes: int,
-                         num_samples: int,
-                         current_frame: int):
+            def write_callback(self,
+                               buffer: bytes,
+                               num_bytes: int,
+                               num_samples: int,
+                               current_frame: int):
                 if num_samples == 0:
                     # If there are no samples in the encoded data, this is
                     # a FLAC header. The header data will arrive in several
@@ -262,26 +282,34 @@ class StreamEncoder(_Encoder):
     """
     def __init__(self,
                  sample_rate: int,
-                 callback: Callable[[bytes, int, int, int], None],
+                 write_callback: Callable[[bytes, int, int, int], None],
+                 seek_callback: Callable[[int], None] = None,
+                 tell_callback: Callable[[], int] = None,
+                 metadata_callback: Callable[[int], None] = None,
                  compression_level: int = 5,
                  blocksize: int = 0,
+                 streamable_subset: bool = True,
                  verify: bool = False):
         super().__init__()
 
-        self.callback = callback
+        self.write_callback = write_callback
+        self.seek_callback = seek_callback
+        self.tell_callback = tell_callback
+        self.metadata_callback = metadata_callback
 
         self._sample_rate = sample_rate
         self._blocksize = blocksize
         self._compression_level = compression_level
+        self._streamable_subset = streamable_subset
         self._verify = verify
 
     def _init(self):
         rc = _lib.FLAC__stream_encoder_init_stream(
             self._encoder,
             _lib._write_callback,
-            _ffi.NULL,
-            _ffi.NULL,
-            _ffi.NULL,
+            _lib._seek_callback if self.seek_callback else _ffi.NULL,
+            _lib._tell_callback if self.tell_callback else _ffi.NULL,
+            _lib._metadata_callback if self.metadata_callback else _ffi.NULL,
             self._encoder_handle
         )
         if rc != _lib.FLAC__STREAM_ENCODER_INIT_STATUS_OK:
@@ -305,7 +333,10 @@ class FileEncoder(_Encoder):
         blocksize (int): The size of the block to be returned in the
             callback. The default is 0 which allows libFLAC to determine
             the best block size.
-        verify (bool): If `True`, the encoder will verify its own
+        streamable_subset (bool): Whether to use the streamable subset for encoding.
+            If true the encoder will check settings for compatibility. If false,
+            the settings may take advantage of the full range that the format allows.
+        verify (bool): If `True`, the encoder will verify it's own
             encoded output by feeding it through an internal decoder and
             comparing the original signal against the decoded signal.
             If a mismatch occurs, the `process` method will raise a
@@ -320,6 +351,7 @@ class FileEncoder(_Encoder):
                  output_file: Path = None,
                  compression_level: int = 5,
                  blocksize: int = 0,
+                 streamable_subset: bool = True,
                  verify: bool = False):
         super().__init__()
 
@@ -333,6 +365,7 @@ class FileEncoder(_Encoder):
         self._sample_rate = sample_rate
         self._blocksize = blocksize
         self._compression_level = compression_level
+        self._streamable_subset = streamable_subset
         self._verify = verify
 
     def _init(self):
@@ -386,7 +419,7 @@ def _write_callback(_encoder,
     """
     encoder = _ffi.from_handle(client_data)
     buffer = bytes(_ffi.buffer(byte_buffer, num_bytes))
-    encoder.callback(
+    encoder.write_callback(
         buffer,
         num_bytes,
         num_samples,
@@ -395,18 +428,22 @@ def _write_callback(_encoder,
     return _lib.FLAC__STREAM_ENCODER_WRITE_STATUS_OK
 
 
-@_ffi.def_extern()
+@_ffi.def_extern(error=_lib.FLAC__STREAM_ENCODER_SEEK_STATUS_ERROR)
 def _seek_callback(_encoder,
                    absolute_byte_offset,
                    client_data):
-    raise NotImplementedError
+    encoder = _ffi.from_handle(client_data)
+    encoder.seek_callback(absolute_byte_offset)
+    return _lib.FLAC__STREAM_ENCODER_SEEK_STATUS_OK
 
 
-@_ffi.def_extern()
+@_ffi.def_extern(error=_lib.FLAC__STREAM_ENCODER_TELL_STATUS_ERROR)
 def _tell_callback(_encoder,
                    absolute_byte_offset,
                    client_data):
-    raise NotImplementedError
+    encoder = _ffi.from_handle(client_data)
+    absolute_byte_offset[0] = encoder.tell_callback()
+    return _lib.FLAC__STREAM_ENCODER_TELL_STATUS_OK
 
 
 @_ffi.def_extern()
@@ -420,7 +457,8 @@ def _metadata_callback(_encoder,
     with the correct statistics after encoding (like minimum/maximum
     frame size and total samples).
     """
-    raise NotImplementedError
+    encoder = _ffi.from_handle(client_data)
+    encoder.metadata_callback(metadata)
 
 
 @_ffi.def_extern()

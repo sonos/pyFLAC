@@ -65,6 +65,12 @@ class TestEncoder(unittest.TestCase):
         self.encoder._blocksize = test_blocksize
         self.assertEqual(self.encoder._blocksize, test_blocksize)
 
+    def test_streamable_subset(self):
+        """ Test that the streamable_subset setter returns the same value from libFLAC """
+        test_streamable_subset = False
+        self.encoder._streamable_subset = test_streamable_subset
+        self.assertEqual(self.encoder._streamable_subset, test_streamable_subset)
+
     def test_compression_level(self):
         """ Test that the compression level setter returns the same value from libFLAC """
         test_compression_level = 8
@@ -86,12 +92,15 @@ class TestStreamEncoder(unittest.TestCase):
     Test suite for the stream encoder class
     """
     def setUp(self):
-        self.callback_called = False
+        self.write_callback_called = False
+        self.seek_callback_called = False
+        self.tell_callback_called = False
+        self.metadata_callback_called = False
         self.encoder = None
         self.default_kwargs = {
             'sample_rate': DEFAULT_SAMPLE_RATE,
             'blocksize': DEFAULT_BLOCKSIZE,
-            'callback': self._callback,
+            'write_callback': self._write_callback,
             'verify': True
         }
 
@@ -99,7 +108,7 @@ class TestStreamEncoder(unittest.TestCase):
         if self.encoder:
             self.encoder.finish()
 
-    def _callback(self,
+    def _write_callback(self,
                   buffer: bytes,
                   num_bytes: int,
                   num_samples: int,
@@ -108,40 +117,90 @@ class TestStreamEncoder(unittest.TestCase):
         assert isinstance(num_bytes, int)
         assert isinstance(num_samples, int)
         assert isinstance(current_frame, int)
-        self.callback_called = True
+        self.write_callback_called = True
+
+    def _seek_callback(self, offset: int):
+        assert isinstance(offset, int)
+        self.seek_callback_called = True
+
+    def _tell_callback(self):
+        self.tell_callback_called = True
+        return 0
+
+    def _metadata_callback(self, metadata):
+        self.metadata_callback_called = True
 
     def test_invalid_sample_rate(self):
-        """ Test than an exception is raised if given an invalid sample rate """
-        self.encoder = StreamEncoder(sample_rate=1000000, callback=self._callback)
-        with self.assertRaises(EncoderInitException) as err:
+        self.default_kwargs['sample_rate'] = 1000000
+        self.encoder = StreamEncoder(**self.default_kwargs)
+        with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE'):
             self.encoder._init()
-            self.assertEqual(str(err), 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE')
 
     def test_invalid_blocksize(self):
         """ Test than an exception is raised if given an invalid block size """
-        self.encoder = StreamEncoder(
-            sample_rate=DEFAULT_SAMPLE_RATE,
-            blocksize=1000000,
-            callback=self._callback
-        )
-        with self.assertRaises(EncoderInitException) as err:
+        self.default_kwargs['blocksize'] = 1000000
+        self.encoder = StreamEncoder(**self.default_kwargs)
+        with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE'):
             self.encoder._init()
-            self.assertEqual(str(err), 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE')
+
+    def test_blocksize_streamable_subset(self):
+        """ Test that an exception is raised if blocksize is outside the streamable subset and streamable is unset """
+        self.default_kwargs['blocksize'] = 65535
+        self.encoder = StreamEncoder(**self.default_kwargs)
+        with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE'):
+            self.encoder._init()
+
+    def test_blocksize_lax(self):
+        """ Test that an exception is not raised on large blocks when in lax mode """
+        self.default_kwargs['blocksize'] = 65535
+        self.default_kwargs['streamable_subset'] = False
+        self.encoder = StreamEncoder(**self.default_kwargs)
+        self.encoder._init()
 
     def test_process_mono(self):
         """ Test that an array of int16 mono samples can be processed """
         self.encoder = StreamEncoder(**self.default_kwargs)
         test_samples = np.random.rand(DEFAULT_BLOCKSIZE, 1).astype('int16')
         self.encoder.process(test_samples)
-        self.assertTrue(self.callback_called)
+        self.encoder.finish()
+        self.assertTrue(self.write_callback_called)
 
     def test_process_stereo(self):
         """ Test that an array of int16 stereo samples can be processed """
         self.encoder = StreamEncoder(**self.default_kwargs)
         test_samples = np.random.rand(DEFAULT_BLOCKSIZE, 2).astype('int16')
         self.encoder.process(test_samples)
-        self.assertTrue(self.callback_called)
+        self.encoder.finish()
+        self.assertTrue(self.write_callback_called)
 
+    def test_seek_tell(self):
+        """ Test that seek and tell callbacks are used """
+        self.default_kwargs['seek_callback'] = self._seek_callback
+        self.default_kwargs['tell_callback'] = self._tell_callback
+        self.encoder = StreamEncoder(**self.default_kwargs)
+        test_samples = np.random.rand(DEFAULT_BLOCKSIZE, 1).astype('int16')
+        self.encoder.process(test_samples)
+        self.encoder.finish()
+        self.assertTrue(self.write_callback_called)
+        self.assertTrue(self.seek_callback_called)
+        self.assertTrue(self.tell_callback_called)
+
+    def test_seek_only(self):
+        """ Supplying only one of seek or tell is not allowed """
+        self.default_kwargs['seek_callback'] = self._seek_callback
+        self.encoder = StreamEncoder(**self.default_kwargs)
+        with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_CALLBACKS'):
+            self.encoder._init()
+
+    def test_metadata(self):
+        """ Test that the metadata callback is called """
+        self.default_kwargs['metadata_callback'] = self._metadata_callback
+        self.encoder = StreamEncoder(**self.default_kwargs)
+        test_samples = np.random.rand(DEFAULT_BLOCKSIZE, 1).astype('int16')
+        self.encoder.process(test_samples)
+        self.encoder.finish()
+        self.assertTrue(self.write_callback_called)
+        self.assertTrue(self.metadata_callback_called)
 
 class TestFileEncoder(unittest.TestCase):
     """
@@ -161,8 +220,22 @@ class TestFileEncoder(unittest.TestCase):
         """ Test than an exception is raised if given an invalid block size """
         self.default_kwargs['blocksize'] = 1000000
         self.encoder = FileEncoder(**self.default_kwargs)
-        with self.assertRaises(EncoderInitException):
+        with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE'):
             self.encoder._init()
+
+    def test_blocksize_streamable_subset(self):
+        """ Test that an exception is raised if blocksize is outside the streamable subset """
+        self.default_kwargs['blocksize'] = 65535
+        self.encoder = FileEncoder(**self.default_kwargs)
+        with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE'):
+            self.encoder._init()
+
+    def test_blocksize_lax(self):
+        """ Test that an exception is not raised on large blocks when in lax mode """
+        self.default_kwargs['blocksize'] = 65535
+        self.default_kwargs['streamable_subset'] = False
+        self.encoder = FileEncoder(**self.default_kwargs)
+        self.encoder._init()
 
     def test_state(self):
         """ Test that the initial state is ok """
