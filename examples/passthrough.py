@@ -32,13 +32,13 @@ class Passthrough:
         self.data, self.sr = sf.read(args.input_file, dtype='int16', always_2d=True)
 
         self.encoder = pyflac.StreamEncoder(
-            callback=self.encoder_callback,
+            write_callback=self.encoder_callback,
             sample_rate=self.sr,
             blocksize=args.block_size,
         )
 
         self.decoder = pyflac.StreamDecoder(
-            callback=self.decoder_callback
+            write_callback=self.decoder_callback
         )
 
     def encode(self):

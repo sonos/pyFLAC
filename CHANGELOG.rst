@@ -1,6 +1,11 @@
 pyFLAC Changelog
 ----------------
 
+**v2.0.0**
+
+* Added `seek` and `tell` callbacks to `StreamEncoder`
+* Renamed the write callbacks from `callback` to `write_callback` for `StreamEncoder` and `StreamDecoder`
+
 **v1.0.0**
 
 * Added a `StreamEncoder` to compress raw audio data on-the-fly into a FLAC byte stream

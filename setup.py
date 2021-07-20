@@ -31,7 +31,7 @@ setup(
     author_email='joe.todd@sonos.com',
     license='Apache License 2.0',
     url='http://pyflac.readthedocs.io/en/latest/',
-    download_url='https://github.com/sonos/pyFLAC/archive/' + __version__ + '.tar.gz',
+    download_url='https://github.com/sonos/pyFLAC/archive/v' + __version__ + '.tar.gz',
     packages=find_packages(),
     include_package_data=True,
     setup_requires=['cffi>=1.4.0'],
@@ -53,7 +53,7 @@ setup(
         ],
     },
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
