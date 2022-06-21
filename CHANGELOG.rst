@@ -4,6 +4,7 @@ pyFLAC Changelog
 **v2.1.0**
 
 * Added support for Linux `arm64` architectures
+* Fixed Raspberry Pi Zero library (see #13)
 * Updated FLAC library to v1.3.4
 
 **v2.0.0**
