@@ -13,6 +13,7 @@ include pyflac/include/FLAC/*.h
 include pyflac/libraries/LICENSE
 include pyflac/libraries/darwin-x86_64/*.dylib
 include pyflac/libraries/linux-x86_64/*.so
+include pyflac/libraries/linux-arm64/*.so
 include pyflac/libraries/raspbian-armv7a/*.so
 include pyflac/libraries/raspbian-armv6z/*.so
 include pyflac/libraries/windows-i686/*.dll

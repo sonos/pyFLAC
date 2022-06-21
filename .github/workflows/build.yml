@@ -24,6 +24,8 @@ jobs:
           clang \
           gcc-arm-linux-gnueabihf \
           g++-arm-linux-gnueabihf \
+          gcc-aarch64-linux-gnu \
+          g++-aarch64-linux-gnu \
           libtool \
           mingw-w64 \
           patchelf \
@@ -32,7 +34,7 @@ jobs:
       run: |
         wget https://ftp.osuosl.org/pub/xiph/releases/flac/flac-${{ github.event.inputs.version }}.tar.xz
 
-    - name: Build libFLAC (Linux)
+    - name: Build libFLAC (Linux x86_64)
       run: |
         tar xJf flac-${{ github.event.inputs.version }}.tar.xz
         mv flac-${{ github.event.inputs.version }} flac-linux-x86_64
@@ -44,18 +46,36 @@ jobs:
         cp src/libFLAC/.libs/libFLAC.so.8.3.0 ../linux-x86_64/libFLAC-8.3.0.so
         cd ../linux-x86_64
         patchelf --set-soname libFLAC-8.3.0.so libFLAC-8.3.0.so
-    - name: Upload Linux library
+    - name: Upload Linux x86_64 library
       uses: actions/upload-artifact@v1
       with:
         name: linux-x86_64
         path: linux-x86_64
+
+    - name: Build libFLAC (Linux arm64)
+      run: |
+        tar xJf flac-${{ github.event.inputs.version }}.tar.xz
+        mv flac-${{ github.event.inputs.version }} flac-linux-arm64
+        cd flac-linux-arm64
+        ./configure --host=aarch64-linux-gnu --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} --enable-shared --disable-static --disable-examples
+        make
+        ls -l src/libFLAC/.libs
+        mkdir ../linux-arm64
+        cp src/libFLAC/.libs/libFLAC.so.8.3.0 ../linux-arm64/libFLAC-8.3.0.so
+        cd ../linux-arm64
+        patchelf --set-soname libFLAC-8.3.0.so libFLAC-8.3.0.so
+    - name: Upload Linux arm64 library
+      uses: actions/upload-artifact@v1
+      with:
+        name: linux-arm64
+        path: linux-arm64
 
     - name: Build libFLAC (Windows x64)
       run: |
         tar xJf flac-${{ github.event.inputs.version }}.tar.xz
         mv flac-${{ github.event.inputs.version }} flac-windows-x86_64
         cd flac-windows-x86_64
-        ./configure --host=x86_64-w64-mingw32 --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} --enable-shared --disable-static --disable-examples
+        ./configure --host=x86_64-w64-mingw32 --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} CFLAGS="-D_FORTIFY_SOURCE=0" --enable-shared --disable-static --disable-examples
         make
         ls -l src/libFLAC/.libs
         mkdir ../windows-x86_64
@@ -72,7 +92,7 @@ jobs:
         tar xJf flac-${{ github.event.inputs.version }}.tar.xz
         mv flac-${{ github.event.inputs.version }} flac-windows-i686
         cd flac-windows-i686
-        ./configure --host=i686-w64-mingw32 --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} --enable-shared --disable-static --disable-examples
+        ./configure --host=i686-w64-mingw32 --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} CFLAGS="-D_FORTIFY_SOURCE=0" --enable-shared --disable-static --disable-examples
         make
         ls -l src/libFLAC/.libs
         mkdir ../windows-i686

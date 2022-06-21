@@ -36,6 +36,8 @@ def get_build_kwargs():
                 architecture = 'raspbian-armv7a'
             else:
                 architecture = 'raspbian-armv6z'
+        elif platform.machine() == 'aarch64':
+            architecture = 'linux-arm64'
         else:
             architecture = 'linux-x86_64'
 

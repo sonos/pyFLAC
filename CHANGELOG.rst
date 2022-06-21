@@ -1,6 +1,11 @@
 pyFLAC Changelog
 ----------------
 
+**v2.1.0**
+
+* Added support for Linux `arm64` architectures
+* Updated FLAC library to v1.3.4
+
 **v2.0.0**
 
 * Added `seek` and `tell` callbacks to `StreamEncoder`
