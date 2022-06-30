@@ -23,9 +23,7 @@ jobs:
           autoconf \
           clang \
           gcc-arm-linux-gnueabihf \
-          g++-arm-linux-gnueabihf \
           gcc-aarch64-linux-gnu \
-          g++-aarch64-linux-gnu \
           libtool \
           mingw-w64 \
           patchelf \
@@ -121,24 +119,6 @@ jobs:
       with:
         name: raspbian-armv7a
         path: raspbian-armv7a
-
-    - name: Build libFLAC (Raspbian armv6z)
-      run: |
-        tar xJf flac-${{ github.event.inputs.version }}.tar.xz
-        mv flac-${{ github.event.inputs.version }} flac-raspbian-armv6z
-        cd flac-raspbian-armv6z
-        ./configure --host=arm-linux-gnueabihf --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} CFLAGS="-mfpu=vfp -mfloat-abi=hard" --enable-shared --disable-static --disable-examples
-        make
-        ls -l src/libFLAC/.libs
-        mkdir ../raspbian-armv6z
-        cp src/libFLAC/.libs/libFLAC.so.8.3.0 ../raspbian-armv6z/libFLAC-8.3.0.so
-        cd ../raspbian-armv6z
-        patchelf --set-soname libFLAC-8.3.0.so libFLAC-8.3.0.so
-    - name: Upload Raspbian armv6z library
-      uses: actions/upload-artifact@v1
-      with:
-        name: raspbian-armv6z
-        path: raspbian-armv6z
 
   build_macos:
     runs-on: macos-latest
