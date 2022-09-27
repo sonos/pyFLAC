@@ -41,8 +41,9 @@ setup(
     ],
     install_requires=[
         'cffi>=1.4.0',
-        'numpy>=1.21',
-        'SoundFile>=0.8.0',
+        'numpy>=1.22; python_version >= "3.8"',
+        'numpy<1.22; python_version < "3.8.0"',
+        'SoundFile>=0.11',
     ],
     test_suite='tests',
     python_requires='>=3.7',
