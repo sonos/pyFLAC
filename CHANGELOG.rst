@@ -1,6 +1,13 @@
 pyFLAC Changelog
 ----------------
 
+**v2.1.0**
+
+* Added support for Linux `arm64` architectures
+* Added support for Darwin `arm64` architectures (macOS Apple Silicon)
+* Fixed Raspberry Pi Zero library (see #13)
+* Updated FLAC library to v1.3.4
+
 **v2.0.0**
 
 * Added `seek` and `tell` callbacks to `StreamEncoder`

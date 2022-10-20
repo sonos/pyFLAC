@@ -24,7 +24,12 @@ def get_build_kwargs():
     }
 
     if system == 'Darwin':
-        architecture = 'darwin-x86_64'
+        cpuinfo = subprocess.check_output(['sysctl', '-n', 'machdep.cpu.brand_string']).decode()
+        if cpuinfo.startswith('Apple'):
+            architecture = 'darwin-arm64'
+        else:
+            architecture = 'darwin-x86_64'
+
         build_kwargs['libraries'] = ['FLAC.8']
         build_kwargs['library_dirs'] = [os.path.join(package_path, 'libraries', architecture)]
         build_kwargs['extra_link_args'] = ['-Wl,-rpath,@loader_path/libraries/' + architecture]
@@ -36,6 +41,8 @@ def get_build_kwargs():
                 architecture = 'raspbian-armv7a'
             else:
                 architecture = 'raspbian-armv6z'
+        elif platform.machine() == 'aarch64':
+            architecture = 'linux-arm64'
         else:
             architecture = 'linux-x86_64'
 
