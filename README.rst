@@ -43,10 +43,10 @@ You can use pip to download and install the latest release with a single command
 Supported platforms
 -------------------
 
-- macOS
-- Linux
-- RPi Zero/2/3/4
-- Windows 7/8/10
+- **macOS** (Intel/Apple Silicon)
+- **Linux** (x86_64/arm64)
+- **RPi** Zero/2/3/4
+- **Windows** 7/8/10
 
 
 CLI

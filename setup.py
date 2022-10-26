@@ -41,12 +41,12 @@ setup(
     ],
     install_requires=[
         'cffi>=1.4.0',
-        'numpy; python_version >= "3.7.0"',
-        'numpy<=1.19.5; python_version < "3.7.0"',
-        'SoundFile>=0.8.0',
+        'numpy>=1.22; python_version >= "3.8"',
+        'numpy<1.22; python_version < "3.8.0"',
+        'SoundFile>=0.11',
     ],
     test_suite='tests',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     entry_points={
         'console_scripts': [
             'pyflac = pyflac.__main__:main',
@@ -58,10 +58,10 @@ setup(
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Topic :: Multimedia :: Sound/Audio',
     ],
 )
