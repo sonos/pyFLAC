@@ -46,7 +46,7 @@ Supported platforms
 - **macOS** (Intel/Apple Silicon)
 - **Linux** (x86_64/arm64)
 - **RPi** Zero/2/3/4
-- **Windows** 7/8/10
+- **Windows** 8/10/11
 
 
 CLI

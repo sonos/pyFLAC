@@ -1,6 +1,10 @@
 pyFLAC Changelog
 ----------------
 
+**v2.2.0**
+
+* Updated FLAC library to v1.4.3
+
 **v2.1.0**
 
 * Added support for Linux `arm64` architectures
