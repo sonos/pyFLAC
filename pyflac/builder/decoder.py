@@ -4,7 +4,7 @@
 #
 #  pyFLAC decoder builder
 #
-#  Copyright (c) 2011-2021, Sonos, Inc.
+#  Copyright (c) 2011-2023, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -105,7 +105,8 @@ typedef enum {
     FLAC__STREAM_DECODER_ERROR_STATUS_LOST_SYNC,
     FLAC__STREAM_DECODER_ERROR_STATUS_BAD_HEADER,
     FLAC__STREAM_DECODER_ERROR_STATUS_FRAME_CRC_MISMATCH,
-    FLAC__STREAM_DECODER_ERROR_STATUS_UNPARSEABLE_STREAM
+    FLAC__STREAM_DECODER_ERROR_STATUS_UNPARSEABLE_STREAM,
+    FLAC__STREAM_DECODER_ERROR_STATUS_BAD_METADATA
 } FLAC__StreamDecoderErrorStatus;
 
 extern const char * const FLAC__StreamDecoderErrorStatusString[];

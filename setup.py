@@ -4,7 +4,7 @@
 #
 #  pyFLAC
 #
-#  Copyright (c) 2011-2021, Sonos, Inc.
+#  Copyright (c) 2011-2023, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -61,7 +61,6 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
-        'Programming Language :: Python :: 3.12',
         'Topic :: Multimedia :: Sound/Audio',
     ],
 )

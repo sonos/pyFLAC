@@ -131,7 +131,7 @@ class TestStreamEncoder(unittest.TestCase):
         self.metadata_callback_called = True
 
     def test_invalid_sample_rate(self):
-        self.default_kwargs['sample_rate'] = 1000000
+        self.default_kwargs['sample_rate'] = 2000000
         self.encoder = StreamEncoder(**self.default_kwargs)
         with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE'):
             self.encoder._init()
