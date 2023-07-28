@@ -402,8 +402,8 @@ def _write_callback(_decoder,
     # --------------------------------------------------------------
     bytes_per_frame = frame.header.blocksize * np.dtype(np.int32).itemsize
 
-    if frame.header.bits_per_sample != 16:
-        raise ValueError('Only int16 data type is supported')
+    if frame.header.bits_per_sample not in (16, 32):
+        raise ValueError('Only int16/int32 data type is supported')
 
     # --------------------------------------------------------------
     # The buffer contains an array of pointers to decoded channels
@@ -414,9 +414,11 @@ def _write_callback(_decoder,
     # --------------------------------------------------------------
     for ch in range(0, frame.header.channels):
         cbuffer = _ffi.buffer(buffer[ch], bytes_per_frame)
-        channels.append(
-            np.frombuffer(cbuffer, dtype='int32').astype(np.int16)
-        )
+        npbuffer = np.frombuffer(cbuffer, dtype='int32')
+        if frame.header.bits_per_sample == 16:
+            channels.append(npbuffer.astype(np.int16))
+        elif frame.header.bits_per_sample == 32:
+            channels.append(npbuffer)
     output = np.column_stack(channels)
     decoder.write_callback(
         output,

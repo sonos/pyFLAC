@@ -3,7 +3,10 @@ pyFLAC Changelog
 
 **v2.2.0**
 
-* Updated FLAC library to v1.4.3
+* Updated FLAC library to v1.4.3.
+    See `FLAC Changelog <https://xiph.org/flac/changelog.html>`_.
+* Added support for `int32` data
+* Added `limit_min_bitrate` property.
 
 **v2.1.0**
 

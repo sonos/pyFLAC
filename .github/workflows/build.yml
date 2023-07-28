@@ -32,39 +32,41 @@ jobs:
         run: |
           wget https://ftp.osuosl.org/pub/xiph/releases/flac/flac-${{ github.event.inputs.version }}.tar.xz
 
-      - name: Build libFLAC (Windows x64)
-        run: |
-          tar xJf flac-${{ github.event.inputs.version }}.tar.xz
-          mv flac-${{ github.event.inputs.version }} flac-windows-x86_64
-          cd flac-windows-x86_64
-          ./configure --host=x86_64-w64-mingw32 --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} --enable-shared --disable-static --disable-examples
-          make
-          ls -l src/libFLAC/.libs
-          mkdir ../windows-x86_64
-          cp src/libFLAC/.libs/libFLAC-12.dll ../windows-x86_64/
-          cp src/libFLAC/.libs/libFLAC.dll.a ../windows-x86_64/FLAC-12.lib
-      - name: Upload Windows x64 library
-        uses: actions/upload-artifact@v1
-        with:
-          name: windows-x86_64
-          path: windows-x86_64
+      # Now taken from https://packages.msys2.org/package/ instead
+      # - name: Build libFLAC (Windows x64)
+      #   run: |
+      #     tar xJf flac-${{ github.event.inputs.version }}.tar.xz
+      #     mv flac-${{ github.event.inputs.version }} flac-windows-x86_64
+      #     cd flac-windows-x86_64
+      #     ./configure --host=x86_64-w64-mingw32 --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} --enable-shared --disable-static --disable-examples
+      #     make
+      #     ls -l src/libFLAC/.libs
+      #     mkdir ../windows-x86_64
+      #     cp src/libFLAC/.libs/libFLAC-12.dll ../windows-x86_64/
+      #     cp src/libFLAC/.libs/libFLAC.dll.a ../windows-x86_64/FLAC-12.lib
+      # - name: Upload Windows x64 library
+      #   uses: actions/upload-artifact@v1
+      #   with:
+      #     name: windows-x86_64
+      #     path: windows-x86_64
 
-      - name: Build libFLAC (Windows x86)
-        run: |
-          tar xJf flac-${{ github.event.inputs.version }}.tar.xz
-          mv flac-${{ github.event.inputs.version }} flac-windows-i686
-          cd flac-windows-i686
-          ./configure --host=i686-w64-mingw32 --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} --enable-shared --disable-static --disable-examples
-          make
-          ls -l src/libFLAC/.libs
-          mkdir ../windows-i686
-          cp src/libFLAC/.libs/libFLAC-12.dll ../windows-i686/
-          cp src/libFLAC/.libs/libFLAC.dll.a ../windows-i686/FLAC-12.lib
-      - name: Upload Windows x64 library
-        uses: actions/upload-artifact@v1
-        with:
-          name: windows-i686
-          path: windows-i686
+      # Now taken from https://packages.msys2.org/package/ instead
+      # - name: Build libFLAC (Windows x86)
+      #   run: |
+      #     tar xJf flac-${{ github.event.inputs.version }}.tar.xz
+      #     mv flac-${{ github.event.inputs.version }} flac-windows-i686
+      #     cd flac-windows-i686
+      #     ./configure --host=i686-w64-mingw32 --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} --enable-shared --disable-static --disable-examples
+      #     make
+      #     ls -l src/libFLAC/.libs
+      #     mkdir ../windows-i686
+      #     cp src/libFLAC/.libs/libFLAC-12.dll ../windows-i686/
+      #     cp src/libFLAC/.libs/libFLAC.dll.a ../windows-i686/FLAC-12.lib
+      # - name: Upload Windows x64 library
+      #   uses: actions/upload-artifact@v1
+      #   with:
+      #     name: windows-i686
+      #     path: windows-i686
 
       - name: Build libFLAC (Raspbian armv7a)
         run: |
