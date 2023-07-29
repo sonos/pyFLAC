@@ -30,8 +30,9 @@ of the compression to the terminal. ::
 Limitations
 -----------
 
-- pyFLAC currently only supports 16-bit audio.
+- pyFLAC only supports 16-bit and 32-bit audio.
 - FLAC metadata handling is not implemented.
+- The built in libraries do not include OGG support.
 
 
 API Reference

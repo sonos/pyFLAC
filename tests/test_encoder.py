@@ -4,7 +4,7 @@
 #
 #  pyFLAC encoder test suite
 #
-#  Copyright (c) 2011-2021, Sonos, Inc.
+#  Copyright (c) 2020-2021, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
