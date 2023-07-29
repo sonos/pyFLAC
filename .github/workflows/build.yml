@@ -32,13 +32,18 @@ jobs:
         run: |
           wget https://ftp.osuosl.org/pub/xiph/releases/flac/flac-${{ github.event.inputs.version }}.tar.xz
 
-      - name: Build libFLAC (Raspbian armv7a)
+      - name: Build libFLAC (Raspbian)
         run: ./scripts/raspbian.sh ${{ github.event.inputs.version }}
       - name: Upload Raspbian armv7a library
         uses: actions/upload-artifact@v1
         with:
           name: raspbian-armv7a
           path: raspbian-armv7a
+      - name: Upload Raspbian armv6l library
+        uses: actions/upload-artifact@v1
+        with:
+          name: raspbian-armv6l
+          path: raspbian-armv6l
 
       - name: Build libFLAC (Linux)
         run: ./scripts/linux.sh ${{ github.event.inputs.version }}
@@ -54,7 +59,7 @@ jobs:
           path: linux-arm64
 
       # Now taken from https://packages.msys2.org/package/ instead
-      - name: Build libFLAC (Windows x64)
+      - name: Build libFLAC (Windows)
         run: ./scripts/windows.sh ${{ github.event.inputs.version }}
       - name: Upload Windows x64 library
         uses: actions/upload-artifact@v1
