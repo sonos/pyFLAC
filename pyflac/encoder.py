@@ -4,7 +4,7 @@
 #
 #  pyFLAC encoder
 #
-#  Copyright (c) 2011-2021, Sonos, Inc.
+#  Copyright (c) 2020-2021, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -222,6 +222,14 @@ class _Encoder:
     def _streamable_subset(self, value: bool):
         _lib.FLAC__stream_encoder_set_streamable_subset(self._encoder, value)
 
+    @property
+    def _limit_min_bitrate(self) -> bool:
+        return _lib.FLAC__stream_encoder_get_limit_min_bitrate(self._encoder)
+
+    @_limit_min_bitrate.setter
+    def _limit_min_bitrate(self, value: bool):
+        _lib.FLAC__stream_encoder_set_limit_min_bitrate(self._encoder, value)
+
 
 class StreamEncoder(_Encoder):
     """
@@ -254,6 +262,8 @@ class StreamEncoder(_Encoder):
             If a mismatch occurs, the `process` method will raise a
             `EncoderProcessException`.  Note that this will slow the
             encoding process by the extra time required for decoding and comparison.
+        limit_min_bitrate (bool): If `True`, the encoder will not output frames which contain
+            only constant subframes, which can be beneficial for streaming applications.
 
     Examples:
         An example write callback which adds the encoded data to a queue for
@@ -289,7 +299,8 @@ class StreamEncoder(_Encoder):
                  compression_level: int = 5,
                  blocksize: int = 0,
                  streamable_subset: bool = True,
-                 verify: bool = False):
+                 verify: bool = False,
+                 limit_min_bitrate: bool = False):
         super().__init__()
 
         self.write_callback = write_callback
@@ -302,6 +313,7 @@ class StreamEncoder(_Encoder):
         self._compression_level = compression_level
         self._streamable_subset = streamable_subset
         self._verify = verify
+        self._limit_min_bitrate = limit_min_bitrate
 
     def _init(self):
         rc = _lib.FLAC__stream_encoder_init_stream(
@@ -333,6 +345,8 @@ class FileEncoder(_Encoder):
         blocksize (int): The size of the block to be returned in the
             callback. The default is 0 which allows libFLAC to determine
             the best block size.
+        dtype (str): The data type to use in the FLAC encoder, either int16 or int32,
+            defaults to int16.
         streamable_subset (bool): Whether to use the streamable subset for encoding.
             If true the encoder will check settings for compatibility. If false,
             the settings may take advantage of the full range that the format allows.
@@ -351,11 +365,15 @@ class FileEncoder(_Encoder):
                  output_file: Path = None,
                  compression_level: int = 5,
                  blocksize: int = 0,
+                 dtype: str = 'int16',
                  streamable_subset: bool = True,
                  verify: bool = False):
         super().__init__()
 
-        self.__raw_audio, sample_rate = sf.read(str(input_file), dtype='int16')
+        if dtype not in ('int16', 'int32'):
+            raise ValueError('FLAC encoding data type must be either int16 or int32')
+
+        self.__raw_audio, sample_rate = sf.read(str(input_file), dtype=dtype)
         if output_file:
             self.__output_file = output_file
         else:

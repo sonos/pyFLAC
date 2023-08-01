@@ -1,0 +1,41 @@
+# ------------------------------------------------------------------------------
+#
+#  pyFLAC
+#
+#  Copyright (c) 2020-2023, Sonos, Inc.
+#  All rights reserved.
+#
+# ------------------------------------------------------------------------------
+[build-system]
+requires = ["setuptools>=42", "cffi>=1.4.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyFLAC"
+version = "2.2.0"
+description = "A Python wrapper for libFLAC"
+readme = "README.rst"
+authors = [{ name = "Joe Todd", email = "joe.todd@sonos.com" }]
+requires-python = ">=3.8"
+license = { text = "Apache-2.0" }
+keywords = ["lossless", "compression", "flac", "bindings", "audio"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Multimedia :: Sound/Audio",
+]
+dependencies = ["cffi>=1.4.0", "numpy>=1.22", "SoundFile>=0.11"]
+
+[project.scripts]
+pyflac = "pyflac.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["pyflac*"]
+exclude = ["assets", "docs", "scripts"]

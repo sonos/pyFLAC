@@ -4,7 +4,7 @@
 #
 #  pyFLAC decoder test suite
 #
-#  Copyright (c) 2011-2021, Sonos, Inc.
+#  Copyright (c) 2020-2021, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -120,6 +120,7 @@ class TestFileDecoder(unittest.TestCase):
         """ Test that a mono FLAC file can be processed """
         test_file = pathlib.Path(__file__).parent / 'data/mono.flac'
         self.default_kwargs['input_file'] = test_file
+        self.default_kwargs['output_file'] = pathlib.Path(self.temp_file.name)
         self.decoder = FileDecoder(**self.default_kwargs)
         self.assertIsNotNone(self.decoder.process())
 
@@ -127,12 +128,21 @@ class TestFileDecoder(unittest.TestCase):
         """ Test that a stereo FLAC file can be processed """
         test_file = pathlib.Path(__file__).parent / 'data/stereo.flac'
         self.default_kwargs['input_file'] = test_file
+        self.default_kwargs['output_file'] = pathlib.Path(self.temp_file.name)
         self.decoder = FileDecoder(**self.default_kwargs)
         self.assertIsNotNone(self.decoder.process())
 
     def test_process_5_1_surround_file(self):
         """ Test that a 5.1 surround FLAC file can be processed """
         test_file = pathlib.Path(__file__).parent / 'data/surround.flac'
+        self.default_kwargs['input_file'] = test_file
+        self.default_kwargs['output_file'] = pathlib.Path(self.temp_file.name)
+        self.decoder = FileDecoder(**self.default_kwargs)
+        self.assertIsNotNone(self.decoder.process())
+
+    def test_process_32_bit_file(self):
+        """ Test that a 32-bit FLAC file can be processed """
+        test_file = pathlib.Path(__file__).parent / 'data/32bit.flac'
         self.default_kwargs['input_file'] = test_file
         self.default_kwargs['output_file'] = pathlib.Path(self.temp_file.name)
         self.decoder = FileDecoder(**self.default_kwargs)

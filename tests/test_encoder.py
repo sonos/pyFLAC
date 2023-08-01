@@ -4,7 +4,7 @@
 #
 #  pyFLAC encoder test suite
 #
-#  Copyright (c) 2011-2021, Sonos, Inc.
+#  Copyright (c) 2020-2021, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -76,6 +76,12 @@ class TestEncoder(unittest.TestCase):
         test_compression_level = 8
         self.encoder._compression_level = test_compression_level
 
+    def test_limit_min_bitrate(self):
+        """ Test that the limit_min_bitrate setter returns the same value from libFLAC """
+        self.assertFalse(self.encoder._limit_min_bitrate)
+        self.encoder._limit_min_bitrate = True
+        self.assertTrue(self.encoder._limit_min_bitrate)
+
     def test_state(self):
         """ Test that the state returns uninitialised """
         self.assertEqual(self.encoder.state, EncoderState.UNINITIALIZED)
@@ -101,7 +107,7 @@ class TestStreamEncoder(unittest.TestCase):
             'sample_rate': DEFAULT_SAMPLE_RATE,
             'blocksize': DEFAULT_BLOCKSIZE,
             'write_callback': self._write_callback,
-            'verify': True
+            'verify': True,
         }
 
     def tearDown(self):
@@ -131,7 +137,7 @@ class TestStreamEncoder(unittest.TestCase):
         self.metadata_callback_called = True
 
     def test_invalid_sample_rate(self):
-        self.default_kwargs['sample_rate'] = 1000000
+        self.default_kwargs['sample_rate'] = 2000000
         self.encoder = StreamEncoder(**self.default_kwargs)
         with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE'):
             self.encoder._init()
@@ -169,6 +175,14 @@ class TestStreamEncoder(unittest.TestCase):
         """ Test that an array of int16 stereo samples can be processed """
         self.encoder = StreamEncoder(**self.default_kwargs)
         test_samples = np.random.rand(DEFAULT_BLOCKSIZE, 2).astype('int16')
+        self.encoder.process(test_samples)
+        self.encoder.finish()
+        self.assertTrue(self.write_callback_called)
+
+    def test_process_int32(self):
+        """ Test that an array of int32 stereo samples can be processed """
+        self.encoder = StreamEncoder(**self.default_kwargs)
+        test_samples = np.random.rand(DEFAULT_BLOCKSIZE, 2).astype('int32')
         self.encoder.process(test_samples)
         self.encoder.finish()
         self.assertTrue(self.write_callback_called)
@@ -223,6 +237,12 @@ class TestFileEncoder(unittest.TestCase):
         with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE'):
             self.encoder._init()
 
+    def test_invalid_dtype(self):
+        """ Test than an exception is raised if given an invalid dtype """
+        self.default_kwargs['dtype'] = 'int24'
+        with self.assertRaisesRegex(ValueError, 'FLAC encoding data type must be either int16 or int32'):
+            self.encoder = FileEncoder(**self.default_kwargs)
+
     def test_blocksize_streamable_subset(self):
         """ Test that an exception is raised if blocksize is outside the streamable subset """
         self.default_kwargs['blocksize'] = 65535
@@ -254,6 +274,7 @@ class TestFileEncoder(unittest.TestCase):
         """ Test that a stereo WAV file can be processed """
         test_path = pathlib.Path(__file__).parent.absolute() / 'data/stereo.wav'
         self.default_kwargs['input_file'] = test_path
+        self.default_kwargs['output_file'] = pathlib.Path(self.temp_file.name)
         self.encoder = FileEncoder(**self.default_kwargs)
         self.encoder.process()
 
@@ -261,6 +282,16 @@ class TestFileEncoder(unittest.TestCase):
         """ Test that a 5.1 surround WAV file can be processed """
         test_path = pathlib.Path(__file__).parent.absolute() / 'data/surround.wav'
         self.default_kwargs['input_file'] = test_path
+        self.default_kwargs['output_file'] = pathlib.Path(self.temp_file.name)
+        self.encoder = FileEncoder(**self.default_kwargs)
+        self.encoder.process()
+
+    def test_process_32_bit_file(self):
+        """ Test that a 32 bit WAV file can be processed """
+        test_path = pathlib.Path(__file__).parent.absolute() / 'data/32bit.wav'
+        self.default_kwargs['input_file'] = test_path
+        self.default_kwargs['output_file'] = pathlib.Path(self.temp_file.name)
+        self.default_kwargs['dtype'] = 'int32'
         self.encoder = FileEncoder(**self.default_kwargs)
         self.encoder.process()
 

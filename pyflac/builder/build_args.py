@@ -4,7 +4,7 @@
 #
 #  pyFLAC builder
 #
-#  Copyright (c) 2011-2021, Sonos, Inc.
+#  Copyright (c) 2020-2023, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ def get_build_kwargs():
         else:
             architecture = 'darwin-x86_64'
 
-        build_kwargs['libraries'] = ['FLAC.8']
+        build_kwargs['libraries'] = ['FLAC.12']
         build_kwargs['library_dirs'] = [os.path.join(package_path, 'libraries', architecture)]
         build_kwargs['extra_link_args'] = ['-Wl,-rpath,@loader_path/libraries/' + architecture]
 
@@ -46,7 +46,7 @@ def get_build_kwargs():
         else:
             architecture = 'linux-x86_64'
 
-        build_kwargs['libraries'] = ['FLAC-8.3.0']
+        build_kwargs['libraries'] = ['FLAC-12.1.0']
         build_kwargs['library_dirs'] = [os.path.join(package_path, 'libraries', architecture)]
         build_kwargs['extra_link_args'] = ['-Wl,-rpath,$ORIGIN/libraries/' + architecture]
 
@@ -56,7 +56,7 @@ def get_build_kwargs():
         else:
             architecture = 'windows-x86_64'
 
-        build_kwargs['libraries'] = ['FLAC-8']
+        build_kwargs['libraries'] = ['FLAC-12']
         build_kwargs['library_dirs'] = [os.path.join(package_path, 'libraries', architecture)]
     else:
         raise RuntimeError('%s platform is not supported' % system)

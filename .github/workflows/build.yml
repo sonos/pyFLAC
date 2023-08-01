@@ -4,158 +4,88 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'The version of libFLAC to build'
+        description: "The version of libFLAC to build"
         required: false
-        default: '1.3.4'
+        default: "1.4.3"
       debug:
-        description: 'Enable debug'
+        description: "Enable debug"
         required: false
-        default: 'no'
+        default: "no"
 
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update -y
-        sudo apt-get install -y \
-          autoconf \
-          clang \
-          gcc-arm-linux-gnueabihf \
-          gcc-aarch64-linux-gnu \
-          libtool \
-          mingw-w64 \
-          patchelf \
-          wget
-    - name: Download libFLAC
-      run: |
-        wget https://ftp.osuosl.org/pub/xiph/releases/flac/flac-${{ github.event.inputs.version }}.tar.xz
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            autoconf \
+            clang \
+            gcc-arm-linux-gnueabihf \
+            gcc-aarch64-linux-gnu \
+            libtool \
+            mingw-w64 \
+            patchelf \
+            wget
+      - name: Download libFLAC
+        run: |
+          wget https://ftp.osuosl.org/pub/xiph/releases/flac/flac-${{ github.event.inputs.version }}.tar.xz
 
-    - name: Build libFLAC (Linux x86_64)
-      run: |
-        tar xJf flac-${{ github.event.inputs.version }}.tar.xz
-        mv flac-${{ github.event.inputs.version }} flac-linux-x86_64
-        cd flac-linux-x86_64
-        CC=clang ./configure --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} --enable-shared --disable-static --disable-examples
-        make
-        ls -l src/libFLAC/.libs
-        mkdir ../linux-x86_64
-        cp src/libFLAC/.libs/libFLAC.so.8.3.0 ../linux-x86_64/libFLAC-8.3.0.so
-        cd ../linux-x86_64
-        patchelf --set-soname libFLAC-8.3.0.so libFLAC-8.3.0.so
-    - name: Upload Linux x86_64 library
-      uses: actions/upload-artifact@v1
-      with:
-        name: linux-x86_64
-        path: linux-x86_64
+      - name: Build libFLAC (Raspbian)
+        run: ./scripts/raspbian.sh ${{ github.event.inputs.version }}
+      - name: Upload Raspbian armv7a library
+        uses: actions/upload-artifact@v1
+        with:
+          name: raspbian-armv7a
+          path: raspbian-armv7a
+      - name: Upload Raspbian armv6l library
+        uses: actions/upload-artifact@v1
+        with:
+          name: raspbian-armv6l
+          path: raspbian-armv6l
 
-    - name: Build libFLAC (Linux arm64)
-      run: |
-        tar xJf flac-${{ github.event.inputs.version }}.tar.xz
-        mv flac-${{ github.event.inputs.version }} flac-linux-arm64
-        cd flac-linux-arm64
-        ./configure --host=aarch64-linux-gnu --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} --enable-shared --disable-static --disable-examples
-        make
-        ls -l src/libFLAC/.libs
-        mkdir ../linux-arm64
-        cp src/libFLAC/.libs/libFLAC.so.8.3.0 ../linux-arm64/libFLAC-8.3.0.so
-        cd ../linux-arm64
-        patchelf --set-soname libFLAC-8.3.0.so libFLAC-8.3.0.so
-    - name: Upload Linux arm64 library
-      uses: actions/upload-artifact@v1
-      with:
-        name: linux-arm64
-        path: linux-arm64
+      - name: Build libFLAC (Linux)
+        run: ./scripts/linux.sh ${{ github.event.inputs.version }}
+      - name: Upload Linux x86_64 library
+        uses: actions/upload-artifact@v1
+        with:
+          name: linux-x86_64
+          path: linux-x86_64
+      - name: Upload Linux arm64 library
+        uses: actions/upload-artifact@v1
+        with:
+          name: linux-arm64
+          path: linux-arm64
 
-    - name: Build libFLAC (Windows x64)
-      run: |
-        tar xJf flac-${{ github.event.inputs.version }}.tar.xz
-        mv flac-${{ github.event.inputs.version }} flac-windows-x86_64
-        cd flac-windows-x86_64
-        ./configure --host=x86_64-w64-mingw32 --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} CFLAGS="-D_FORTIFY_SOURCE=0" --enable-shared --disable-static --disable-examples
-        make
-        ls -l src/libFLAC/.libs
-        mkdir ../windows-x86_64
-        cp src/libFLAC/.libs/libFLAC-8.dll ../windows-x86_64/
-        cp src/libFLAC/.libs/libFLAC.dll.a ../windows-x86_64/FLAC-8.lib
-    - name: Upload Windows x64 library
-      uses: actions/upload-artifact@v1
-      with:
-        name: windows-x86_64
-        path: windows-x86_64
-
-    - name: Build libFLAC (Windows x86)
-      run: |
-        tar xJf flac-${{ github.event.inputs.version }}.tar.xz
-        mv flac-${{ github.event.inputs.version }} flac-windows-i686
-        cd flac-windows-i686
-        ./configure --host=i686-w64-mingw32 --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} CFLAGS="-D_FORTIFY_SOURCE=0" --enable-shared --disable-static --disable-examples
-        make
-        ls -l src/libFLAC/.libs
-        mkdir ../windows-i686
-        cp src/libFLAC/.libs/libFLAC-8.dll ../windows-i686/
-        cp src/libFLAC/.libs/libFLAC.dll.a ../windows-i686/FLAC-8.lib
-    - name: Upload Windows x64 library
-      uses: actions/upload-artifact@v1
-      with:
-        name: windows-i686
-        path: windows-i686
-
-    - name: Build libFLAC (Raspbian armv7a)
-      run: |
-        tar xJf flac-${{ github.event.inputs.version }}.tar.xz
-        mv flac-${{ github.event.inputs.version }} flac-raspbian-armv7a
-        cd flac-raspbian-armv7a
-        ./configure --host=arm-linux-gnueabihf --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} CFLAGS="-mfpu=neon -march=armv7-a -mfloat-abi=hard" --enable-shared --disable-static --disable-examples
-        make
-        ls -l src/libFLAC/.libs
-        mkdir ../raspbian-armv7a
-        cp src/libFLAC/.libs/libFLAC.so.8.3.0 ../raspbian-armv7a/libFLAC-8.3.0.so
-        cd ../raspbian-armv7a
-        patchelf --set-soname libFLAC-8.3.0.so libFLAC-8.3.0.so
-    - name: Upload Raspbian armv7a library
-      uses: actions/upload-artifact@v1
-      with:
-        name: raspbian-armv7a
-        path: raspbian-armv7a
+      # Now taken from https://packages.msys2.org/package/ instead
+      - name: Build libFLAC (Windows)
+        run: ./scripts/windows.sh ${{ github.event.inputs.version }}
+      - name: Upload Windows x64 library
+        uses: actions/upload-artifact@v1
+        with:
+          name: windows-x86_64
+          path: windows-x86_64
+      - name: Upload Windows i686 library
+        uses: actions/upload-artifact@v1
+        with:
+          name: windows-i686
+          path: windows-i686
 
   build_macos:
     runs-on: macos-latest
     steps:
-    - name: Install dependencies
-      run: brew install wget
-    - name: Download libFLAC
-      run: |
-        wget https://ftp.osuosl.org/pub/xiph/releases/flac/flac-${{ github.event.inputs.version }}.tar.xz
-        tar xvf flac-${{ github.event.inputs.version }}.tar.xz
-    - name: Build libFLAC (x86_64)
-      run: |
-        cd flac-${{ github.event.inputs.version }}
-        CC=clang ./configure --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} --enable-shared --disable-static --disable-examples
-        make
-        mkdir ../darwin-x86_64
-        ls -l src/libFLAC/.libs
-        cp src/libFLAC/.libs/libFLAC.8.dylib ../darwin-x86_64/
-        cd ../darwin-x86_64
-        install_name_tool -id @rpath/libFLAC.8.dylib libFLAC.8.dylib
-    - name: Upload macOS x86_64 library
-      uses: actions/upload-artifact@v1
-      with:
-        name: darwin-x86_64
-        path: darwin-x86_64
-    - name: Build libFLAC (arm64)
-      run: |
-        cd flac-${{ github.event.inputs.version }}
-        ./configure --host=aarch64-apple-darwin --with-ogg=no --enable-debug=${{ github.event.inputs.debug }} CFLAGS="-arch arm64 -target arm64-apple-macos11" CXXFLAGS="-arch arm64 -target arm64-apple-macos11" --enable-shared --disable-static --disable-examples
-        make
-        mkdir ../darwin-arm64
-        ls -l src/libFLAC/.libs
-        cp src/libFLAC/.libs/libFLAC.8.dylib ../darwin-arm64/
-        cd ../darwin-arm64
-        install_name_tool -id @rpath/libFLAC.8.dylib libFLAC.8.dylib
-    - name: Upload macOS arm64 library
-      uses: actions/upload-artifact@v1
-      with:
-        name: darwin-arm64
-        path: darwin-arm64
+      - name: Install dependencies
+        run: brew install wget
+      - name: Build libFLAC (macOS)
+        run: ./scripts/darwin.sh ${{ github.event.inputs.version }}
+      - name: Upload macOS x86_64 library
+        uses: actions/upload-artifact@v1
+        with:
+          name: darwin-x86_64
+          path: darwin-x86_64
+      - name: Upload macOS arm64 library
+        uses: actions/upload-artifact@v1
+        with:
+          name: darwin-arm64
+          path: darwin-arm64
