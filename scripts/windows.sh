@@ -1,7 +1,9 @@
 #!/bin/sh
 
 echo "Building for x86_64..."
-echo "Now just take from https://packages.msys2.org/package/ instead"
+echo "Now just download the -win.zip files from FLAC downloads instead to get the DLL"
+echo "And download from https://packages.msys2.org/package/"
+echo "Renaming libFLAC.dll.a to FLAC-12.lib"
 exit
 
 cd /tmp

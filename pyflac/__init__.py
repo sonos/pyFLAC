@@ -39,9 +39,9 @@ if platform.system() == 'Windows':
     ffi = FFI()
     base_path = os.path.dirname(os.path.abspath(__file__))
     if platform.architecture()[0] == '32bit':
-        libflac = ffi.dlopen(os.path.join(base_path, 'libraries', 'windows-i686', 'libFLAC-12.dll'))
+        libflac = ffi.dlopen(os.path.join(base_path, 'libraries', 'windows-i686', 'libFLAC.dll'))
     elif platform.architecture()[0] == '64bit':
-        libflac = ffi.dlopen(os.path.join(base_path, 'libraries', 'windows-x86_64', 'libFLAC-12.dll'))
+        libflac = ffi.dlopen(os.path.join(base_path, 'libraries', 'windows-x86_64', 'libFLAC.dll'))
 
 
 # flake8: noqa: F401
