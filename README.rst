@@ -5,8 +5,6 @@
     :target: https://github.com/sonos/pyFLAC/actions/workflows/lint.yml
 .. image:: https://github.com/sonos/pyFLAC/actions/workflows/test.yml/badge.svg
     :target: https://github.com/sonos/pyFLAC/actions/workflows/test.yml
-.. image:: https://github.com/sonos/pyFLAC/actions/workflows/build.yml/badge.svg
-    :target: https://github.com/sonos/pyFLAC/actions/workflows/build.yml
 .. image:: https://coveralls.io/repos/github/sonos/pyFLAC/badge.svg
     :target: https://coveralls.io/github/sonos/pyFLAC
 .. image:: https://readthedocs.org/projects/pyflac/badge
