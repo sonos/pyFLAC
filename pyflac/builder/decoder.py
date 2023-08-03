@@ -4,7 +4,7 @@
 #
 #  pyFLAC decoder builder
 #
-#  Copyright (c) 2011-2021, Sonos, Inc.
+#  Copyright (c) 2020-2023, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -105,7 +105,8 @@ typedef enum {
     FLAC__STREAM_DECODER_ERROR_STATUS_LOST_SYNC,
     FLAC__STREAM_DECODER_ERROR_STATUS_BAD_HEADER,
     FLAC__STREAM_DECODER_ERROR_STATUS_FRAME_CRC_MISMATCH,
-    FLAC__STREAM_DECODER_ERROR_STATUS_UNPARSEABLE_STREAM
+    FLAC__STREAM_DECODER_ERROR_STATUS_UNPARSEABLE_STREAM,
+    FLAC__STREAM_DECODER_ERROR_STATUS_BAD_METADATA
 } FLAC__StreamDecoderErrorStatus;
 
 extern const char * const FLAC__StreamDecoderErrorStatusString[];
@@ -175,17 +176,26 @@ typedef struct {
 } FLAC__EntropyCodingMethod;
 
 typedef struct {
-    FLAC__int32 value; /**< The constant signal value. */
+    FLAC__int64 value; /**< The constant signal value. */
 } FLAC__Subframe_Constant;
 
+typedef enum {
+    FLAC__VERBATIM_SUBFRAME_DATA_TYPE_INT32 = 0,
+	FLAC__VERBATIM_SUBFRAME_DATA_TYPE_INT64 = 1,
+} FLAC__VerbatimSubframeDataType;
+
 typedef struct {
-    const FLAC__int32 *data; /**< A pointer to verbatim signal. */
+    union {
+		const FLAC__int32 *int32; /**< A FLAC__int32 pointer to verbatim signal. */
+		const FLAC__int64 *int64; /**< A FLAC__int64 pointer to verbatim signal. */
+	} data;
+	FLAC__VerbatimSubframeDataType data_type;
 } FLAC__Subframe_Verbatim;
 
 typedef struct {
     FLAC__EntropyCodingMethod entropy_coding_method;
     uint32_t order;
-    FLAC__int32 warmup[4];
+    FLAC__int64 warmup[4];
     const FLAC__int32 *residual;
 } FLAC__Subframe_Fixed;
 
@@ -195,7 +205,7 @@ typedef struct {
     uint32_t qlp_coeff_precision;
     int quantization_level;
     FLAC__int32 qlp_coeff[32];
-    FLAC__int32 warmup[32];
+    FLAC__int64 warmup[32];
     const FLAC__int32 *residual;
 } FLAC__Subframe_LPC;
 

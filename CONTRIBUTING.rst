@@ -3,15 +3,14 @@ Contributing
 
 If you find any bugs or other things that need improvement,
 or would like to add additional features, please create an issue or a pull request at
-https://github.com/sonos/pyFLAC
-Contributions are always welcome!
+https://github.com/sonos/pyFLAC.
 
 You get started, grab the latest version of the code from GitHub::
 
    git clone https://github.com/sonos/pyFLAC.git
    cd pyflac
 
-To build the package for development::
+To build the package::
 
    python3 pyflac/builder/encoder.py
 
@@ -22,7 +21,7 @@ you can also install your local copy with pip::
    pip3 install .
 
 Before submitting a pull request, make sure all tests are passing and the
-test coverage has not been decreased.
+test coverage has not decreased.
 
 Testing
 -------
@@ -42,7 +41,8 @@ You can install it and the read the docs theme with::
 
 To create the HTML pages, use::
 
-   python3 setup.py build_sphinx
+   cd docs
+   make html
 
 The generated files will be available in the directory ``docs/_build/html``.
 

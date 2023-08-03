@@ -5,8 +5,6 @@
     :target: https://github.com/sonos/pyFLAC/actions/workflows/lint.yml
 .. image:: https://github.com/sonos/pyFLAC/actions/workflows/test.yml/badge.svg
     :target: https://github.com/sonos/pyFLAC/actions/workflows/test.yml
-.. image:: https://github.com/sonos/pyFLAC/actions/workflows/build.yml/badge.svg
-    :target: https://github.com/sonos/pyFLAC/actions/workflows/build.yml
 .. image:: https://coveralls.io/repos/github/sonos/pyFLAC/badge.svg
     :target: https://coveralls.io/github/sonos/pyFLAC
 .. image:: https://readthedocs.org/projects/pyflac/badge
@@ -46,7 +44,7 @@ Supported platforms
 - **macOS** (Intel/Apple Silicon)
 - **Linux** (x86_64/arm64)
 - **RPi** Zero/2/3/4
-- **Windows** 7/8/10
+- **Windows** 8/10/11
 
 
 CLI
