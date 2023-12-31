@@ -314,6 +314,22 @@ def _read_callback(_decoder,
     If an exception is raised here, the abort status is returned.
     """
     decoder = _ffi.from_handle(client_data)
+
+    while len(decoder._buffer) == 0 and not decoder._error:
+
+        if decoder._done:
+            # ----------------------------------------------------------
+            # The end of the stream has been instructed by a call to
+            # finish.
+            # ----------------------------------------------------------
+            num_bytes[0] = 0
+            return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
+
+        # ----------------------------------------------------------
+        # Wait until there is something in the buffer
+        # ----------------------------------------------------------
+        time.sleep(0.01)
+
     if decoder._error:
         # ----------------------------------------------------------
         # If an error has been issued via the error callback, then
@@ -321,20 +337,7 @@ def _read_callback(_decoder,
         # ----------------------------------------------------------
         return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
 
-    if decoder._done:
-        # ----------------------------------------------------------
-        # The end of the stream has been instructed by a call to
-        # finish.
-        # ----------------------------------------------------------
-        num_bytes[0] = 0
-        return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
-
     maximum_bytes = int(num_bytes[0])
-    while len(decoder._buffer) == 0:
-        # ----------------------------------------------------------
-        # Wait until there is something in the buffer
-        # ----------------------------------------------------------
-        time.sleep(0.01)
 
     # --------------------------------------------------------------
     # Ensure only the maximum bytes or less is taken from
