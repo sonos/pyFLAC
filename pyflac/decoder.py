@@ -321,6 +321,13 @@ def _read_callback(_decoder,
         # ----------------------------------------------------------
         time.sleep(0.01)
 
+    if decoder._error:
+        # ----------------------------------------------------------
+        # If an error has been issued via the error callback, then
+        # abort the processing of the stream.
+        # ----------------------------------------------------------
+        return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
+
     if decoder._done:
         # ----------------------------------------------------------
         # The end of the stream has been instructed by a call to
@@ -328,13 +335,6 @@ def _read_callback(_decoder,
         # ----------------------------------------------------------
         num_bytes[0] = 0
         return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
-
-    if decoder._error:
-        # ----------------------------------------------------------
-        # If an error has been issued via the error callback, then
-        # abort the processing of the stream.
-        # ----------------------------------------------------------
-        return _lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT
 
     maximum_bytes = int(num_bytes[0])
 
