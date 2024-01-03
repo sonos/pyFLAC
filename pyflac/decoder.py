@@ -315,20 +315,19 @@ def _read_callback(_decoder,
     """
     decoder = _ffi.from_handle(client_data)
 
-    while len(decoder._buffer) == 0 and not decoder._error:
-
-        if decoder._done:
-            # ----------------------------------------------------------
-            # The end of the stream has been instructed by a call to
-            # finish.
-            # ----------------------------------------------------------
-            num_bytes[0] = 0
-            return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
-
+    while not (decoder._error or decoder._done) and len(decoder._buffer) == 0:
         # ----------------------------------------------------------
         # Wait until there is something in the buffer
         # ----------------------------------------------------------
         time.sleep(0.01)
+
+    if decoder._done:
+        # ----------------------------------------------------------
+        # The end of the stream has been instructed by a call to
+        # finish.
+        # ----------------------------------------------------------
+        num_bytes[0] = 0
+        return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
 
     if decoder._error:
         # ----------------------------------------------------------
