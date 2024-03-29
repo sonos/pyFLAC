@@ -1,6 +1,10 @@
 pyFLAC Changelog
 ----------------
 
+**v2.3.0**
+
+* Fixed bug in the shutdown behaviour of the decoder (see #22 and #23).
+
 **v2.2.0**
 
 * Updated FLAC library to v1.4.3.

@@ -12,7 +12,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyFLAC"
-version = "2.2.0"
+version = "2.3.0"
 description = "A Python wrapper for libFLAC"
 readme = "README.rst"
 authors = [{ name = "Joe Todd", email = "joe.todd@sonos.com" }]

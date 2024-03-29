@@ -225,8 +225,8 @@ class StreamDecoder(_Decoder):
         # Instruct the decoder to finish up and wait until it is done
         # --------------------------------------------------------------
         self._done = True
-        super().finish()
         self._thread.join(timeout=3)
+        super().finish()
         if self._error:
             raise DecoderProcessException(self._error)
 
@@ -314,6 +314,14 @@ def _read_callback(_decoder,
     If an exception is raised here, the abort status is returned.
     """
     decoder = _ffi.from_handle(client_data)
+
+    while len(decoder._buffer) == 0 and not (decoder._error or decoder._done):
+        # ----------------------------------------------------------
+        # Wait until there is something in the buffer, or an error
+        # occurs, or the end of the stream is reached.
+        # ----------------------------------------------------------
+        time.sleep(0.01)
+
     if decoder._error:
         # ----------------------------------------------------------
         # If an error has been issued via the error callback, then
@@ -329,18 +337,12 @@ def _read_callback(_decoder,
         num_bytes[0] = 0
         return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
 
-    maximum_bytes = int(num_bytes[0])
-    while len(decoder._buffer) == 0:
-        # ----------------------------------------------------------
-        # Wait until there is something in the buffer
-        # ----------------------------------------------------------
-        time.sleep(0.01)
-
     # --------------------------------------------------------------
     # Ensure only the maximum bytes or less is taken from
     # the thread safe queue.
     # --------------------------------------------------------------
     data = bytes()
+    maximum_bytes = int(num_bytes[0])
     if len(decoder._buffer[0]) <= maximum_bytes:
         data = decoder._buffer.popleft()
         maximum_bytes -= len(data)
