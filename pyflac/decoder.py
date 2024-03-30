@@ -93,7 +93,8 @@ class _Decoder:
         Flushes the decoding buffer, releases resources, resets the decoder
         settings to their defaults, and returns the decoder state to `DecoderState.UNINITIALIZED`.
 
-        A well behaved program should always call this at the end.
+        A well behaved program should always call this at the end, otherwise the processing
+        thread will be left running, awaiting more data.
         """
         _lib.FLAC__stream_decoder_finish(self._decoder)
 
