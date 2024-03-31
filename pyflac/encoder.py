@@ -4,7 +4,7 @@
 #
 #  pyFLAC encoder
 #
-#  Copyright (c) 2020-2021, Sonos, Inc.
+#  Copyright (c) 2020-2024, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -335,6 +335,8 @@ class FileEncoder(_Encoder):
     The pyFLAC file encoder reads the raw audio data from the WAV file and
     writes the encoded audio data to a FLAC file.
 
+    Note that the input WAV file must be either PCM_16 or PCM_32.
+
     Args:
         input_file (pathlib.Path): Path to the input WAV file
         output_file (pathlib.Path): Path to the output FLAC file, a temporary
@@ -345,8 +347,6 @@ class FileEncoder(_Encoder):
         blocksize (int): The size of the block to be returned in the
             callback. The default is 0 which allows libFLAC to determine
             the best block size.
-        dtype (str): The data type to use in the FLAC encoder, either int16 or int32,
-            defaults to int16.
         streamable_subset (bool): Whether to use the streamable subset for encoding.
             If true the encoder will check settings for compatibility. If false,
             the settings may take advantage of the full range that the format allows.
@@ -365,13 +365,17 @@ class FileEncoder(_Encoder):
                  output_file: Path = None,
                  compression_level: int = 5,
                  blocksize: int = 0,
-                 dtype: str = 'int16',
                  streamable_subset: bool = True,
                  verify: bool = False):
         super().__init__()
 
-        if dtype not in ('int16', 'int32'):
-            raise ValueError('FLAC encoding data type must be either int16 or int32')
+        info = sf.info(str(input_file))
+        if info.subtype == 'PCM_16':
+            dtype = 'int16'
+        elif info.subtype == 'PCM_32':
+            dtype = 'int32'
+        else:
+            raise ValueError(f'WAV input data type must be either PCM_16 or PCM_32: Got {info.subtype}')
 
         self.__raw_audio, sample_rate = sf.read(str(input_file), dtype=dtype)
         if output_file:

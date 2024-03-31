@@ -1,9 +1,11 @@
 pyFLAC Changelog
 ----------------
 
-**v2.3.0**
+**v3.0.0**
 
 * Fixed bug in the shutdown behaviour of the decoder (see #22 and #23).
+* Automatically detect bit depth of input data in the `FileEncoder`, and
+  raise an error if not 16-bit or 32-bit PCM (see #24).
 
 **v2.2.0**
 

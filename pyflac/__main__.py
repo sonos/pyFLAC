@@ -27,7 +27,6 @@ def get_args():
     parser.add_argument('-c', '--compression-level', type=int, choices=range(0, 9), default=5,
                         help='0 is the fastest compression, 5 is the default, 8 is the highest compression')
     parser.add_argument('-b', '--block-size', type=int, default=0, help='The block size')
-    parser.add_argument('-d', '--dtype', default='int16', help='The encoded data type (int16 or int32)')
     parser.add_argument('-v', '--verify', action='store_false', default=True, help='Verify the compressed data')
     args = parser.parse_args()
     return args
@@ -45,7 +44,6 @@ def main():
             input_file=args.input_file,
             output_file=args.output_file,
             blocksize=args.block_size,
-            dtype=args.dtype,
             compression_level=args.compression_level,
             verify=args.verify
         )

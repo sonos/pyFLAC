@@ -4,7 +4,7 @@
 #
 #  pyFLAC encoder test suite
 #
-#  Copyright (c) 2020-2021, Sonos, Inc.
+#  Copyright (c) 2020-2024, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -237,12 +237,6 @@ class TestFileEncoder(unittest.TestCase):
         with self.assertRaisesRegex(EncoderInitException, 'FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE'):
             self.encoder._init()
 
-    def test_invalid_dtype(self):
-        """ Test than an exception is raised if given an invalid dtype """
-        self.default_kwargs['dtype'] = 'int24'
-        with self.assertRaisesRegex(ValueError, 'FLAC encoding data type must be either int16 or int32'):
-            self.encoder = FileEncoder(**self.default_kwargs)
-
     def test_blocksize_streamable_subset(self):
         """ Test that an exception is raised if blocksize is outside the streamable subset """
         self.default_kwargs['blocksize'] = 65535
@@ -291,7 +285,6 @@ class TestFileEncoder(unittest.TestCase):
         test_path = pathlib.Path(__file__).parent.absolute() / 'data/32bit.wav'
         self.default_kwargs['input_file'] = test_path
         self.default_kwargs['output_file'] = pathlib.Path(self.temp_file.name)
-        self.default_kwargs['dtype'] = 'int32'
         self.encoder = FileEncoder(**self.default_kwargs)
         self.encoder.process()
 
