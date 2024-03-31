@@ -76,6 +76,7 @@ class TestStreamDecoder(unittest.TestCase):
         self.decoder.process(test_data)
         self.decoder.finish()
         self.assertTrue(self.write_callback_called)
+        self.assertFalse(self.decoder._thread.is_alive())
 
     def test_process_blocks(self):
         """ Test that FLAC data can be decoded in blocks """
