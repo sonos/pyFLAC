@@ -68,6 +68,8 @@ data directly from a file or process in real-time.
    :undoc-members:
    :inherited-members:
 
+.. autoclass:: pyflac.OneShotDecoder
+
 State
 -----
 

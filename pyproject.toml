@@ -2,7 +2,7 @@
 #
 #  pyFLAC
 #
-#  Copyright (c) 2020-2023, Sonos, Inc.
+#  Copyright (c) 2020-2024, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -12,7 +12,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyFLAC"
-version = "2.2.0"
+version = "3.0.0"
 description = "A Python wrapper for libFLAC"
 readme = "README.rst"
 authors = [{ name = "Joe Todd", email = "joe.todd@sonos.com" }]
@@ -29,6 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Multimedia :: Sound/Audio",
 ]
 dependencies = ["cffi>=1.4.0", "numpy>=1.22", "SoundFile>=0.11"]

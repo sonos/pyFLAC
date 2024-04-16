@@ -1,6 +1,14 @@
 pyFLAC Changelog
 ----------------
 
+**v3.0.0**
+
+* Fixed bug in the shutdown behaviour of the `StreamDecoder` (see #22 and #23).
+* Automatically detect bit depth of input data in the `FileEncoder`, and
+  raise an error if not 16-bit or 32-bit PCM (see #24).
+* Added a new `OneShotDecoder` to decode a buffer of FLAC data in a single
+  blocking operation, without the use of threads. Courtesy of @GOAE.
+
 **v2.2.0**
 
 * Updated FLAC library to v1.4.3.

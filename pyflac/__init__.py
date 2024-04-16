@@ -4,13 +4,13 @@
 #
 #  pyFLAC
 #
-#  Copyright (c) 2020-2021, Sonos, Inc.
+#  Copyright (c) 2020-2024, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
 
 __title__ = 'pyFLAC'
-__version__ = '2.2.0'
+__version__ = '3.0.0'
 __all__ = [
     'StreamEncoder',
     'FileEncoder',
@@ -19,6 +19,7 @@ __all__ = [
     'EncoderProcessException',
     'StreamDecoder',
     'FileDecoder',
+    'OneShotDecoder',
     'DecoderState',
     'DecoderInitException',
     'DecoderProcessException'
@@ -55,6 +56,7 @@ from .encoder import (
 from .decoder import (
     StreamDecoder,
     FileDecoder,
+    OneShotDecoder,
     DecoderState,
     DecoderInitException,
     DecoderProcessException
