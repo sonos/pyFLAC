@@ -29,7 +29,16 @@ class Passthrough:
         self.idx = 0
         self.total_bytes = 0
         self.queue = queue.SimpleQueue()
-        self.data, self.sr = sf.read(args.input_file, dtype='int16', always_2d=True)
+
+        info = sf.info(str(args.input_file))
+        if info.subtype == 'PCM_16':
+            dtype = 'int16'
+        elif info.subtype == 'PCM_32':
+            dtype = 'int32'
+        else:
+            raise ValueError(f'WAV input data type must be either PCM_16 or PCM_32: Got {info.subtype}')
+
+        self.data, self.sr = sf.read(args.input_file, dtype=dtype, always_2d=True)
 
         self.encoder = pyflac.StreamEncoder(
             write_callback=self.encoder_callback,

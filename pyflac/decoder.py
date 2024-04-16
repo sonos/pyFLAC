@@ -4,7 +4,7 @@
 #
 #  pyFLAC decoder
 #
-#  Copyright (c) 2020-2021, Sonos, Inc.
+#  Copyright (c) 2020-2024, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -93,7 +93,8 @@ class _Decoder:
         Flushes the decoding buffer, releases resources, resets the decoder
         settings to their defaults, and returns the decoder state to `DecoderState.UNINITIALIZED`.
 
-        A well behaved program should always call this at the end.
+        A well behaved program should always call this at the end, otherwise the processing
+        thread will be left running, awaiting more data.
         """
         _lib.FLAC__stream_decoder_finish(self._decoder)
 
@@ -120,6 +121,9 @@ class StreamDecoder(_Decoder):
     The compressed data is passed in via the `process` method, and
     blocks of raw uncompressed audio is passed back to the user via
     the `callback`.
+
+    The `finish` method must be called at the end of the decoding process,
+    otherwise the processing thread will be left running.
 
     Args:
         write_callback (fn): Function to call when there is uncompressed
@@ -159,6 +163,8 @@ class StreamDecoder(_Decoder):
 
         self._done = False
         self._buffer = deque()
+        self._event = threading.Event()
+        self._lock = threading.Lock()
         self.write_callback = write_callback
 
         rc = _lib.FLAC__stream_decoder_init_stream(
@@ -200,7 +206,10 @@ class StreamDecoder(_Decoder):
         Args:
             data (bytes): Bytes of FLAC data
         """
+        self._lock.acquire()
         self._buffer.append(data)
+        self._lock.release()
+        self._event.set()
 
     def finish(self):
         """
@@ -225,8 +234,9 @@ class StreamDecoder(_Decoder):
         # Instruct the decoder to finish up and wait until it is done
         # --------------------------------------------------------------
         self._done = True
+        self._event.set()
+        self._thread.join()
         super().finish()
-        self._thread.join(timeout=3)
         if self._error:
             raise DecoderProcessException(self._error)
 
@@ -303,6 +313,84 @@ class FileDecoder(_Decoder):
         self.__output.write(data)
 
 
+class OneShotDecoder(_Decoder):
+    """
+    A pyFLAC one-shot decoder converts a buffer of FLAC encoded
+    bytes back to raw audio data. Unlike the `StreamDecoder` class,
+    the one-shot decoder operates on a single block of data, and
+    runs in a blocking manner, as opposed to in a background thread.
+
+    The compressed data is passed in via the constructor, and
+    blocks of raw uncompressed audio is passed back to the user via
+    the `callback`.
+
+    Args:
+        write_callback (fn): Function to call when there is uncompressed
+            audio data ready, see the example below for more information.
+        buffer (bytes): The FLAC encoded audio data
+
+    Examples:
+        An example callback which writes the audio data to file
+        using SoundFile.
+
+        .. code-block:: python
+            :linenos:
+
+            import soundfile as sf
+
+            def callback(self,
+                         audio: np.ndarray,
+                         sample_rate: int,
+                         num_channels: int,
+                         num_samples: int):
+
+                # ------------------------------------------------------
+                # Note: num_samples is the number of samples per channel
+                # ------------------------------------------------------
+                if self.output is None:
+                    self.output = sf.SoundFile(
+                        'output.wav', mode='w', channels=num_channels,
+                        samplerate=sample_rate
+                    )
+                self.output.write(audio)
+
+    Raises:
+        DecoderInitException: If initialisation of the decoder fails
+    """
+    def __init__(self,
+                 write_callback: Callable[[np.ndarray, int, int, int], None],
+                 buffer: bytes):
+        super().__init__()
+        self._done = False
+        self._buffer = deque()
+        self._buffer.append(buffer)
+        self._event = threading.Event()
+        self._event.set()
+        self._lock = threading.Lock()
+        self.write_callback = write_callback
+
+        rc = _lib.FLAC__stream_decoder_init_stream(
+            self._decoder,
+            _lib._read_callback,
+            _ffi.NULL,
+            _ffi.NULL,
+            _ffi.NULL,
+            _ffi.NULL,
+            _lib._write_callback,
+            _ffi.NULL,
+            _lib._error_callback,
+            self._decoder_handle
+        )
+        if rc != _lib.FLAC__STREAM_DECODER_INIT_STATUS_OK:
+            raise DecoderInitException(rc)
+
+        while len(self._buffer) > 0:
+            _lib.FLAC__stream_decoder_process_single(self._decoder)
+
+        self._done = True
+        super().finish()
+
+
 @_ffi.def_extern(error=_lib.FLAC__STREAM_DECODER_READ_STATUS_ABORT)
 def _read_callback(_decoder,
                    byte_buffer,
@@ -314,6 +402,12 @@ def _read_callback(_decoder,
     If an exception is raised here, the abort status is returned.
     """
     decoder = _ffi.from_handle(client_data)
+
+    # ----------------------------------------------------------
+    # Wait until there is something in the buffer, or an error
+    # occurs, or the end of the stream is reached.
+    # ----------------------------------------------------------
+    decoder._event.wait()
     if decoder._error:
         # ----------------------------------------------------------
         # If an error has been issued via the error callback, then
@@ -329,18 +423,13 @@ def _read_callback(_decoder,
         num_bytes[0] = 0
         return _lib.FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM
 
-    maximum_bytes = int(num_bytes[0])
-    while len(decoder._buffer) == 0:
-        # ----------------------------------------------------------
-        # Wait until there is something in the buffer
-        # ----------------------------------------------------------
-        time.sleep(0.01)
-
     # --------------------------------------------------------------
     # Ensure only the maximum bytes or less is taken from
     # the thread safe queue.
     # --------------------------------------------------------------
     data = bytes()
+    maximum_bytes = int(num_bytes[0])
+    decoder._lock.acquire()
     if len(decoder._buffer[0]) <= maximum_bytes:
         data = decoder._buffer.popleft()
         maximum_bytes -= len(data)
@@ -348,6 +437,14 @@ def _read_callback(_decoder,
     if len(decoder._buffer) > 0 and len(decoder._buffer[0]) > maximum_bytes:
         data += decoder._buffer[0][0:maximum_bytes]
         decoder._buffer[0] = decoder._buffer[0][maximum_bytes:]
+
+    # --------------------------------------------------------------
+    # If there is no more data to process from the buffer, then
+    # clear the event, the thread will await more data to process.
+    # --------------------------------------------------------------
+    if len(decoder._buffer) == 0 or (len(decoder._buffer) > 0 and len(decoder._buffer[0]) == 0):
+        decoder._event.clear()
+    decoder._lock.release()
 
     actual_bytes = len(data)
     num_bytes[0] = actual_bytes
@@ -449,3 +546,4 @@ def _error_callback(_decoder,
         _lib.FLAC__StreamDecoderErrorStatusString[status]).decode()
     decoder.logger.error(f'Error in libFLAC decoder: {message}')
     decoder._error = message
+    decoder._event.set()

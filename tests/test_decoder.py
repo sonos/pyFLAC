@@ -4,7 +4,7 @@
 #
 #  pyFLAC decoder test suite
 #
-#  Copyright (c) 2020-2021, Sonos, Inc.
+#  Copyright (c) 2020-2024, Sonos, Inc.
 #  All rights reserved.
 #
 # ------------------------------------------------------------------------------
@@ -20,6 +20,7 @@ from pyflac.decoder import _Decoder
 from pyflac import (
     FileDecoder,
     StreamDecoder,
+    OneShotDecoder,
     DecoderState,
     DecoderInitException,
     DecoderProcessException
@@ -76,6 +77,7 @@ class TestStreamDecoder(unittest.TestCase):
         self.decoder.process(test_data)
         self.decoder.finish()
         self.assertTrue(self.write_callback_called)
+        self.assertFalse(self.decoder._thread.is_alive())
 
     def test_process_blocks(self):
         """ Test that FLAC data can be decoded in blocks """
@@ -147,6 +149,32 @@ class TestFileDecoder(unittest.TestCase):
         self.default_kwargs['output_file'] = pathlib.Path(self.temp_file.name)
         self.decoder = FileDecoder(**self.default_kwargs)
         self.assertIsNotNone(self.decoder.process())
+
+
+class TestOneShotDecoder(unittest.TestCase):
+    """
+    Test suite for the one-shot decoder class.
+    """
+    def setUp(self):
+        self.decoder = None
+        self.write_callback_called = False
+        self.tests_path = pathlib.Path(__file__).parent.absolute()
+
+    def _write_callback(self, data, rate, channels, samples):
+        assert isinstance(data, np.ndarray)
+        assert isinstance(rate, int)
+        assert isinstance(channels, int)
+        assert isinstance(samples, int)
+        self.write_callback_called = True
+
+    def test_process(self):
+        """ Test that FLAC data can be decoded """
+        test_path = self.tests_path / 'data/stereo.flac'
+        with open(test_path, 'rb') as flac:
+            test_data = flac.read()
+
+        self.decoder = OneShotDecoder(write_callback=self._write_callback, buffer=test_data)
+        self.assertTrue(self.write_callback_called)
 
 
 if __name__ == '__main__':
